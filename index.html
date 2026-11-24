@@ -118,5 +118,179 @@ $('importBtn').onclick=()=>$('importFile').click();
 $('importFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const data=JSON.parse(await f.text());const incoming=Array.isArray(data)?data:data.students;if(!Array.isArray(incoming)||!incoming.every(validRecord))throw Error('The file does not contain valid ABLA 360 student records.');if(!confirm('Import '+incoming.length+' records? Existing records with the same admission number will be replaced.'))return;const map=new Map(students.map(s=>[s.admission.toLowerCase(),s]));incoming.forEach(s=>map.set(s.admission.toLowerCase(),s));students=[...map.values()];save();alert('Backup imported successfully.');}catch(err){alert('Import failed: '+err.message)}finally{e.target.value=''}};
 load();render();
 })();
+(function () {
+  const suggestions = {
+    interests: {
+      title: 'Suggested interests',
+      items: [
+        'Reading and books','Mathematics','Science and discovery',
+        'Technology and computers','Building and construction',
+        'Drawing and painting','Music and singing','Dance and drama',
+        'Nature and animals','Farming and gardening','Business and entrepreneurship',
+        'Sports and fitness','Leadership and teamwork','Helping others',
+        'Faith and values','Problem-solving','Creative activities',
+        'Storytelling','Exploring and experimenting'
+      ]
+    },
+    hobbies: {
+      title: 'Suggested hobbies',
+      items: [
+        'Reading','Drawing','Painting','Writing stories','Colouring',
+        'Solving puzzles','Playing chess','Building with blocks',
+        'Playing football','Skipping','Running','Cycling',
+        'Dancing','Singing','Playing musical instruments',
+        'Gardening','Swimming','Playing games','Cooking',
+        'Sewing','Craft making','Storytelling','Acting',
+        'Collecting objects','Teaching friends','Helping at home'
+      ]
+    },
+    talents: {
+      title: 'Suggested talents and strengths',
+      items: [
+        'Creative thinking','Problem-solving','Good communication',
+        'Public speaking','Storytelling','Reading','Writing',
+        'Mathematical reasoning','Scientific curiosity','Drawing',
+        'Painting','Singing','Dancing','Musical ability',
+        'Leadership','Teamwork','Helping others','Sports ability',
+        'Physical coordination','Building and making things',
+        'Organisation','Entrepreneurial thinking','Digital skills',
+        'Observation','Memory','Imagination','Practical skills'
+      ]
+    },
+    favourite: {
+      title: 'Suggested favourite subjects or activities',
+      items: [
+        'English Language','Mathematics','Science','Computing',
+        'Creative Arts','Our World Our People','Reading',
+        'Writing','Drawing','Painting','Music','Dance',
+        'Physical Education','Storytelling','Practical activities',
+        'Group projects','Building activities','Nature exploration'
+      ]
+    },
+    aspirations: {
+      title: 'Suggested future aspirations',
+      items: [
+        'Teacher','Doctor','Nurse','Engineer','Architect',
+        'Lawyer','Scientist','Entrepreneur','Farmer',
+        'Footballer','Athlete','Artist','Musician','Writer',
+        'Journalist','Fashion designer','Chef','Pilot',
+        'Police officer','Soldier','Accountant','Computer programmer',
+        'Software developer','Builder','Electrician','Mechanic',
+        'Veterinarian','Dentist','Researcher','Not yet expressed'
+      ]
+    },
+    learning: {
+      title: 'Suggested learning preferences',
+      items: [
+        'Pictures and visual materials','Demonstrations',
+        'Practical activities','Group learning','Individual learning',
+        'Storytelling','Songs and rhymes','Educational games',
+        'Repetition and practice','Step-by-step explanations',
+        'Extra thinking time','Individual attention',
+        'Hands-on activities','Class discussions',
+        'Movement-based activities','Reading aloud',
+        'Peer learning','Quiet learning environment'
+      ]
+    },
+    character: {
+      title: 'Positive character observations',
+      items: [
+        'Honesty','Responsibility','Self-discipline','Patience',
+        'Courage','Perseverance','Confidence','Humility',
+        'Respect','Independence','Determination','Self-control',
+        'Initiative','Accountability','Kindness','Compassion',
+        'Empathy','Generosity','Cooperation','Sharing',
+        'Forgiveness','Tolerance','Inclusiveness','Teamwork',
+        'Curiosity','Enthusiasm for learning','Creativity',
+        'Problem-solving','Accepting feedback','Helping others',
+        'Leading by example','Fairness'
+      ]
+    },
+    conduct: {
+      title: 'Conduct and development observations',
+      items: [
+        'Follows instructions','Participates in class',
+        'Listens attentively','Respects others',
+        'Shares with classmates','Waits for their turn',
+        'Completes assigned tasks','Helps classmates',
+        'Follows classroom rules','Uses polite language',
+        'Works independently','Works well in a team',
+        'Needs reminders to follow instructions',
+        'Needs support with concentration',
+        'Needs support completing tasks',
+        'Needs help with transitions between activities',
+        'Needs support sharing with others',
+        'Needs help expressing feelings',
+        'Benefits from individual guidance',
+        'Benefits from additional practice',
+        'Shows improvement after guidance',
+        'Needs encouragement to participate'
+      ]
+    }
+  };
+
+  Object.entries(suggestions).forEach(([fieldId, config]) => {
+    const field = document.getElementById(fieldId);
+    if (!field || field.dataset.pickerAdded) return;
+
+    field.dataset.pickerAdded = 'yes';
+
+    const box = document.createElement('div');
+    box.style.cssText =
+      'margin-top:8px;padding:10px;background:#f3f6f9;border-radius:9px';
+
+    const label = document.createElement('label');
+    label.textContent = config.title;
+
+    const select = document.createElement('select');
+    select.multiple = true;
+    select.size = 4;
+    select.style.marginBottom = '8px';
+
+    config.items.forEach(item => {
+      const option = document.createElement('option');
+      option.value = item;
+      option.textContent = item;
+      select.appendChild(option);
+    });
+
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'secondary';
+    button.textContent = '＋ Add selected choices';
+    button.style.width = '100%';
+
+    button.addEventListener('click', () => {
+      const selected = Array.from(select.selectedOptions)
+        .map(option => option.value);
+
+      if (!selected.length) {
+        alert('Please select at least one suggestion.');
+        return;
+      }
+
+      const existing = field.value
+        .split(/[,;\n]+/)
+        .map(value => value.trim())
+        .filter(Boolean);
+
+      const known = new Set(existing.map(value => value.toLowerCase()));
+
+      selected.forEach(value => {
+        if (!known.has(value.toLowerCase())) {
+          existing.push(value);
+          known.add(value.toLowerCase());
+        }
+      });
+
+      field.value = existing.join(', ');
+      select.selectedIndex = -1;
+    });
+
+    box.append(label, select, button);
+    field.parentElement.appendChild(box);
+  });
+})();
+
 </script>
 </body></html>
