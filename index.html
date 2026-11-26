@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="en">
 <head>
@@ -36,8 +37,8 @@ table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:11px 9px
  <button id="ablaSignOut" class="secondary" type="button" hidden>Sign out</button>
 </section>
 <main id="ablaMain" hidden>
- <div class="topline"><div><div class="eyebrow">Student management · Phase 1</div><h2>Student Registry</h2></div><div class="actions"><button class="secondary" id="exportBtn">Export backup</button><button class="secondary" id="importBtn">Import backup</button><button class="gold" id="addBtn">＋ Register student</button><input type="file" id="importFile" accept=".json,application/json" hidden></div></div>
- <div class="notice"><b>Data status:</b> Staff sign-in is checked through Supabase. Student records in this build are still stored in this browser on this device; cloud student synchronisation has not yet been enabled. Use test records only, export backups regularly, and do not enter live pupil information until cloud access controls and synchronisation have been tested.</div>
+ <div class="topline"><div><div class="eyebrow">Student management · Phase 1</div><h2>Student Registry</h2></div><div class="actions"><button class="secondary" id="exportBtn">Export backup</button><button class="secondary" id="importBtn" disabled title="Cloud import will be enabled after migration safeguards are added">Import backup (temporarily unavailable)</button><button class="gold" id="addBtn">＋ Register student</button><input type="file" id="importFile" accept=".json,application/json" hidden></div></div>
+ <div class="notice" id="cloudStatus"><b>Cloud status:</b> Checking authorised access and student records. Your earlier device records will be preserved separately and will not be uploaded automatically. Use fictional test records only during this stage.</div>
  <section class="cards">
   <div class="card"><div class="label">REGISTERED STUDENTS</div><div class="num" id="total">0</div><div class="sub">All saved student records</div></div>
   <div class="card"><div class="label">ACTIVE STUDENTS</div><div class="num" id="active">0</div><div class="sub">Currently enrolled</div></div>
@@ -109,7 +110,7 @@ function render(){
  document.querySelectorAll('.viewBtn').forEach(btn=>btn.addEventListener('click',()=>showProfile(btn.dataset.id)));
 }
 const fields=['admission','fullName','dob','gender','className','admissionDate','status','parentName','relationship','phone','phone2','address','interests','hobbies','talents','favourite','aspirations','learning','character','conduct','notes'];
-function openForm(s){editingId=s?s.id:null;$('studentForm').reset();$('formTitle').textContent=s?'Edit student record':'Register student';fields.forEach(k=>$(k).value=s?.[k]||'');$('formModal').classList.add('show')}
+function openForm(s){editingId=s?s.id:null;$('studentForm').dataset.cloudId=s?.cloudId||'';$('studentForm').reset();$('formTitle').textContent=s?'Edit student record':'Register student';fields.forEach(k=>$(k).value=s?.[k]||'');$('formModal').classList.add('show')}
 function closeForm(){$('formModal').classList.remove('show')}
 $('addBtn').onclick=()=>openForm(null);$('closeForm').onclick=closeForm;$('cancelForm').onclick=closeForm;
 $('studentForm').onsubmit=e=>{e.preventDefault();const r={};fields.forEach(k=>r[k]=$(k).value.trim());r.status=r.status||'Active';r.id=editingId||('st_'+Date.now()+'_'+Math.random().toString(36).slice(2,8));if(students.some(s=>s.admission.toLowerCase()===r.admission.toLowerCase()&&s.id!==r.id)){alert('That admission number is already in use. Please check it.');return}if(editingId){students=students.map(s=>s.id===editingId?r:s)}else{students.push(r)}save();closeForm();};
@@ -317,6 +318,7 @@ load();render();
   const message = document.getElementById('ablaAuthMessage');
   const signOut = document.getElementById('ablaSignOut');
   const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+  window.ablaSupabase = db;
 
   function showSignedOut(text) {
     app.hidden = true;
@@ -349,6 +351,7 @@ load();render();
     signOut.hidden = false;
     message.textContent = 'Signed in: ' + profile.full_name + ' · Role: ' + profile.role;
     app.hidden = false;
+    window.dispatchEvent(new Event('abla:staff-ready'));
   }
 
   form.addEventListener('submit', async function (event) {
@@ -378,4 +381,161 @@ load();render();
   });
 })();
 </script>
+<script>
+(function () {
+  const KEY = 'abla360_students_v1';
+  const BACKUP_KEY = 'abla360_local_backup_before_cloud_v1';
+  const statusBox = document.getElementById('cloudStatus');
+  const form = document.getElementById('studentForm');
+  const $ = id => document.getElementById(id);
+  const toText = value => value == null ? '' : String(value);
+  const localFields = ['admission','fullName','dob','gender','className','admissionDate','status','parentName','relationship','phone','phone2','address','interests','hobbies','talents','favourite','aspirations','learning','character','conduct','notes'];
+  let cloudReady = false;
+
+  function setStatus(message, ok) {
+    if (!statusBox) return;
+    statusBox.innerHTML = '<b>Cloud status:</b> ' + message;
+    statusBox.style.background = ok ? '#edf8f1' : '#fff8e6';
+    statusBox.style.borderColor = ok ? '#b8e0c7' : '#f0d68b';
+  }
+
+  function mapStudent(row, guardian) {
+    return {
+      id: row.id, cloudId: row.id,
+      admission: row.admission_number || '', fullName: row.full_name || '',
+      dob: row.date_of_birth || '', gender: row.gender || '', className: row.class_name || '',
+      admissionDate: row.admission_date || '', status: row.enrolment_status || 'Active',
+      parentName: guardian?.full_name || '', relationship: guardian?.relationship || '',
+      phone: guardian?.phone || '', phone2: guardian?.alternative_phone || '', address: guardian?.address || '',
+      interests: row.interests || '', hobbies: row.hobbies || '', talents: row.talents || '',
+      favourite: row.favourite_subject_activity || '', aspirations: row.aspirations || '',
+      learning: row.learning_preferences || '', character: row.positive_character_observations || '',
+      conduct: row.conduct_development_notes || '', notes: row.other_notes || ''
+    };
+  }
+
+  async function loadCloud() {
+    const db = window.ablaSupabase;
+    if (!db) return;
+    setStatus('Connecting to the ABLA 360 cloud database…', false);
+    try {
+      const [studentsRes, linksRes, guardiansRes] = await Promise.all([
+        db.from('students').select('*').order('full_name'),
+        db.from('student_guardians').select('student_id,guardian_id,is_primary'),
+        db.from('guardians').select('*')
+      ]);
+      if (studentsRes.error) throw studentsRes.error;
+      if (linksRes.error) throw linksRes.error;
+      if (guardiansRes.error) throw guardiansRes.error;
+
+      if (localStorage.getItem(BACKUP_KEY) === null) {
+        localStorage.setItem(BACKUP_KEY, localStorage.getItem(KEY) || '[]');
+      }
+      const guardianById = new Map((guardiansRes.data || []).map(g => [g.id, g]));
+      const primaryByStudent = new Map();
+      (linksRes.data || []).forEach(link => {
+        if (!primaryByStudent.has(link.student_id) || link.is_primary) primaryByStudent.set(link.student_id, link.guardian_id);
+      });
+      const records = (studentsRes.data || []).map(row => mapStudent(row, guardianById.get(primaryByStudent.get(row.id))));
+      const nextJson = JSON.stringify(records);
+      const previousJson = localStorage.getItem(KEY) || '[]';
+      if (previousJson !== nextJson) localStorage.setItem(KEY, nextJson);
+      cloudReady = true;
+      setStatus('Connected. Showing ' + records.length + ' cloud student record(s). Your previous device-only records are preserved in a separate local backup and have NOT been uploaded. Add a fictional test student first.', true);
+      if (previousJson !== nextJson) window.location.reload();
+    } catch (error) {
+      cloudReady = false;
+      setStatus('Could not load cloud records: ' + (error.message || String(error)) + '. Your device records have not been uploaded. Please report this message before entering data.', false);
+    }
+  }
+
+  async function saveCloudStudent(event) {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    if (!cloudReady) { alert('The cloud connection is not ready. Please refresh and sign in again.'); return; }
+    const db = window.ablaSupabase;
+    const record = {};
+    localFields.forEach(key => { record[key] = $(key).value.trim(); });
+    record.status = record.status || 'Active';
+    if (!record.admission || !record.fullName) { alert('Admission number and full name are required.'); return; }
+    const cloudId = form.dataset.cloudId || '';
+    const payload = {
+      admission_number: record.admission.trim(), full_name: record.fullName.trim(),
+      date_of_birth: record.dob || null, gender: record.gender || null,
+      class_name: record.className || null, admission_date: record.admissionDate || null,
+      enrolment_status: record.status, interests: record.interests || null,
+      hobbies: record.hobbies || null, talents: record.talents || null,
+      favourite_subject_activity: record.favourite || null, aspirations: record.aspirations || null,
+      learning_preferences: record.learning || null,
+      positive_character_observations: record.character || null,
+      conduct_development_notes: record.conduct || null, other_notes: record.notes || null
+    };
+    const submit = form.querySelector('button[type="submit"]');
+    submit.disabled = true; submit.textContent = 'Saving to cloud…';
+    try {
+      let studentResult;
+      if (cloudId) {
+        studentResult = await db.from('students').update(payload).eq('id', cloudId).select('id').single();
+      } else {
+        studentResult = await db.from('students').insert(payload).select('id').single();
+      }
+      if (studentResult.error) throw studentResult.error;
+      const studentId = studentResult.data.id;
+
+      if (record.parentName) {
+        let guardianQuery = db.from('guardians').select('id').eq('full_name', record.parentName).limit(1);
+        if (record.phone) guardianQuery = guardianQuery.eq('phone', record.phone);
+        const found = await guardianQuery.maybeSingle();
+        if (found.error) throw found.error;
+        let guardianId = found.data?.id;
+        const guardianPayload = {full_name:record.parentName, relationship:record.relationship || null, phone:record.phone || null, alternative_phone:record.phone2 || null, address:record.address || null};
+        if (guardianId) {
+          const updateGuardian = await db.from('guardians').update(guardianPayload).eq('id', guardianId);
+          if (updateGuardian.error) throw updateGuardian.error;
+        } else {
+          const insertGuardian = await db.from('guardians').insert(guardianPayload).select('id').single();
+          if (insertGuardian.error) throw insertGuardian.error;
+          guardianId = insertGuardian.data.id;
+        }
+        const removeLinks = await db.from('student_guardians').delete().eq('student_id', studentId);
+        if (removeLinks.error) throw removeLinks.error;
+        const linkResult = await db.from('student_guardians').insert({student_id:studentId,guardian_id:guardianId,is_primary:true});
+        if (linkResult.error) throw linkResult.error;
+      }
+      $('formModal').classList.remove('show');
+      setStatus('Student saved successfully in Supabase. Refreshing the cloud registry…', true);
+      await loadCloud();
+    } catch (error) {
+      alert('Cloud save failed: ' + (error.message || String(error)) + '\n\nNo success has been assumed. Please share this error.');
+      setStatus('Save failed: ' + (error.message || String(error)), false);
+    } finally {
+      submit.disabled = false; submit.textContent = 'Save student record';
+    }
+  }
+
+  async function deleteCloudStudent() {
+    const selectedId = document.getElementById('profileContent')?.querySelector('.eyebrow')?.textContent;
+    const current = JSON.parse(localStorage.getItem(KEY) || '[]');
+    const student = current.find(s => s.id === window.ablaSelectedStudentId) || current.find(s => s.cloudId && s.cloudId === window.ablaSelectedStudentId);
+    if (!student) { alert('Could not identify the selected cloud record.'); return; }
+    if (!confirm('Delete this cloud student record? This action cannot be undone here.')) return;
+    const db = window.ablaSupabase;
+    try {
+      const links = await db.from('student_guardians').delete().eq('student_id', student.cloudId);
+      if (links.error) throw links.error;
+      const removed = await db.from('students').delete().eq('id', student.cloudId);
+      if (removed.error) throw removed.error;
+      $('profileModal').classList.remove('show');
+      await loadCloud();
+    } catch (error) { alert('Cloud delete failed: ' + (error.message || String(error))); }
+  }
+
+  form.addEventListener('submit', saveCloudStudent, true);
+  // Until cloud deletion has been fully audited, prevent accidental local-only deletion.
+  $('deleteStudent').onclick = () => alert('Cloud deletion is temporarily disabled while the audit and recovery safeguards are completed.');
+  $('importBtn').onclick = () => alert('Backup import is temporarily disabled during the first cloud-sync test. Export remains available.');
+  window.addEventListener('abla:staff-ready', loadCloud);
+})();
+</script>
 </body></html>
+
