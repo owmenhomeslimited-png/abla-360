@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="en">
 <head>
@@ -48,6 +47,49 @@ table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:11px 9px
  <section class="panel"><div class="panelhead"><h3>Find a student</h3><span class="pill">Instant search</span></div><div class="searchrow"><input id="search" placeholder="Search name, admission number, class or parent phone…" autocomplete="off"><select id="classFilter" style="max-width:180px"><option value="">All classes</option><option>Crèche</option><option>Nursery 1</option><option>Nursery 2</option><option>KG 1</option><option>KG 2</option><option>Class 1</option><option>Class 2</option><option>Class 3</option><option>Class 4</option><option>Class 5</option><option>Class 6</option></select></div></section>
  <section class="panel"><div class="panelhead"><h3>Student records</h3><span class="pill" id="shown">0 records</span></div><div class="tablewrap"><table><thead><tr><th>Student</th><th>Admission No.</th><th>Class</th><th>Date of birth</th><th>Status</th><th>Profile</th></tr></thead><tbody id="studentRows"></tbody></table><div class="empty" id="empty">No student records yet. Select “Register student” to add the first pupil.</div></div></section>
  <section class="panel"><div class="panelhead"><h3>Upcoming birthdays</h3><span class="pill">Next 30 days</span></div><div id="birthdayRows" class="birthdaylist"><div class="empty">No upcoming birthdays recorded.</div></div></section>
+ <section class="panel" id="financeModule" hidden>
+  <div class="panelhead"><div><div class="eyebrow">Leadership controls</div><h3>School Finance & Corrections</h3></div><button class="secondary" type="button" id="financeRefresh">Refresh finance data</button></div>
+  <div class="notice" style="margin-bottom:12px">Leadership-only area. Corrections are recorded as new, traceable entries; original payments and fee charges are not overwritten. Use fictional test records while testing.</div>
+  <div id="financeMessage" role="status" style="font-size:13px;margin:8px 0 14px;color:#425466">Finance data has not been loaded yet.</div>
+  <div class="cards" style="grid-template-columns:repeat(4,1fr)">
+   <div class="card"><div class="label">FEES CHARGED</div><div class="num" id="finCharges">—</div></div>
+   <div class="card"><div class="label">NET RECEIVED</div><div class="num" id="finReceived">—</div></div>
+   <div class="card"><div class="label">ALLOCATED</div><div class="num" id="finAllocated">—</div></div>
+   <div class="card"><div class="label">OUTSTANDING</div><div class="num" id="finOutstanding">—</div></div>
+  </div>
+  <div class="panel" style="padding:12px;margin-top:12px">
+   <div class="panelhead"><h3>Student fee balances</h3><span class="pill" id="financeStudentCount">0 students</span></div>
+   <div class="tablewrap"><table><thead><tr><th>Student</th><th>Admission No.</th><th>Class</th><th>Charges</th><th>Paid</th><th>Outstanding</th></tr></thead><tbody id="financeStudentRows"><tr><td colspan="6" class="empty">No data loaded.</td></tr></tbody></table></div>
+  </div>
+  <div class="panel" style="padding:12px;margin-top:12px">
+   <div class="panelhead"><h3>Family fee balances</h3><span class="pill">Combined accounts</span></div>
+   <div class="tablewrap"><table><thead><tr><th>Guardian / family</th><th>Children</th><th>Charges</th><th>Paid</th><th>Outstanding</th></tr></thead><tbody id="financeFamilyRows"><tr><td colspan="5" class="empty">No data loaded.</td></tr></tbody></table></div>
+  </div>
+  <div class="panel" style="padding:12px;margin-top:12px">
+   <h3 style="margin-top:0">Authorised fee adjustment</h3>
+   <p style="font-size:13px;color:#667789">Choose an original fee charge. Enter a positive amount to increase it or a negative amount to reduce it. The system will reject a reduction that falls below the amount already paid.</p>
+   <form id="feeAdjustmentForm">
+    <div class="field"><label for="feeAdjustmentCharge">Fee charge *</label><select id="feeAdjustmentCharge" required><option value="">Loading fee charges…</option></select></div>
+    <div class="grid2"><div class="field"><label for="feeAdjustmentAmount">Adjustment amount (GHS) *</label><input id="feeAdjustmentAmount" type="number" step="0.01" required placeholder="e.g. -10.00"></div><div class="field"><label for="feeAdjustmentReason">Reason *</label><input id="feeAdjustmentReason" required minlength="5" placeholder="Explain why the fee is changing"></div></div>
+    <div class="formactions"><button class="gold" type="submit">Record fee adjustment</button></div>
+   </form>
+  </div>
+  <div class="panel" style="padding:12px;margin-top:12px">
+   <h3 style="margin-top:0">Authorised payment correction</h3>
+   <p style="font-size:13px;color:#667789">Select the original payment. If money was allocated to a fee, reverse the relevant allocation first. Then enter the amount being refunded, voided or corrected. Both actions are processed together.</p>
+   <form id="paymentCorrectionForm">
+    <div class="field"><label for="correctionPayment">Original payment *</label><select id="correctionPayment" required><option value="">Loading payments…</option></select></div>
+    <div class="field"><label for="correctionAllocation">Allocation to reverse (optional)</label><select id="correctionAllocation"><option value="">No allocation reversal</option></select></div>
+    <div class="grid2">
+     <div class="field"><label for="allocationReversalAmount">Allocation reversal amount (GHS)</label><input id="allocationReversalAmount" type="number" min="0" step="0.01" value="0"></div>
+     <div class="field"><label for="paymentReversalAmount">Payment refund / reversal amount (GHS)</label><input id="paymentReversalAmount" type="number" min="0" step="0.01" value="0"></div>
+     <div class="field"><label for="paymentReversalType">Payment correction type</label><select id="paymentReversalType"><option value="refund">Refund</option><option value="void">Void</option><option value="correction">Correction</option></select></div>
+     <div class="field"><label for="paymentCorrectionReason">Reason *</label><input id="paymentCorrectionReason" required minlength="5" placeholder="Explain the correction"></div>
+    </div>
+    <div class="formactions"><button class="gold" type="submit">Process payment correction</button></div>
+   </form>
+  </div>
+ </section>
  <div class="foot">Ampontuah Best Link Academy · ABLA 360 · Student Registry</div>
 </main>
 <div class="modal" id="formModal"><div class="dialog"><div class="dialoghead"><h2 id="formTitle">Register student</h2><button class="close" id="closeForm">✕</button></div>
@@ -321,6 +363,8 @@ load();render();
   window.ablaSupabase = db;
 
   function showSignedOut(text) {
+    window.ablaStaffProfile = null;
+    window.dispatchEvent(new Event('abla:staff-signed-out'));
     app.hidden = true;
     form.hidden = false;
     signOut.hidden = true;
@@ -347,6 +391,7 @@ load();render();
       showSignedOut('Access denied. An active ABLA staff profile was not found.');
       return;
     }
+    window.ablaStaffProfile = { user_id: session.user.id, full_name: profile.full_name, role: profile.role, is_active: profile.is_active };
     form.hidden = true;
     signOut.hidden = false;
     message.textContent = 'Signed in: ' + profile.full_name + ' · Role: ' + profile.role;
@@ -537,5 +582,167 @@ load();render();
   window.addEventListener('abla:staff-ready', loadCloud);
 })();
 </script>
-</body></html>
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const panel = $('financeModule');
+  if (!panel) return;
+  let feeCharges = [];
+  let payments = [];
+  let allocations = [];
+  let studentsById = new Map();
 
+  function esc(value) {
+    return String(value == null ? '' : value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function money(value) {
+    const n = Number(value || 0);
+    return 'GHS ' + n.toLocaleString('en-GH', {minimumFractionDigits:2, maximumFractionDigits:2});
+  }
+  function message(text, ok) {
+    $('financeMessage').textContent = text;
+    $('financeMessage').style.color = ok ? '#16794b' : '#8a4b08';
+  }
+  function leadershipAllowed() {
+    const p = window.ablaStaffProfile;
+    return !!(p && p.is_active === true && ['proprietor','administrator'].includes(p.role));
+  }
+  function optionHtml(value, label) {
+    return '<option value="' + esc(value) + '">' + esc(label) + '</option>';
+  }
+
+  async function loadFinance() {
+    if (!leadershipAllowed()) {
+      panel.hidden = true;
+      return;
+    }
+    panel.hidden = false;
+    const db = window.ablaSupabase;
+    if (!db) { message('The database connection is unavailable.', false); return; }
+    message('Loading school finance data…', false);
+    $('financeRefresh').disabled = true;
+    try {
+      const [summaryRes, studentRes, familyRes, chargesRes, paymentsRes, allocationsRes] = await Promise.all([
+        db.from('school_fee_financial_summary').select('*').maybeSingle(),
+        db.from('student_financial_balances').select('student_id,admission_number,full_name,class_name,total_charges,total_paid,outstanding_balance').order('full_name'),
+        db.from('family_financial_balances').select('guardian_id,guardian_name,number_of_children,children_names,family_total_charges,family_total_paid,family_outstanding_balance').order('guardian_name'),
+        db.from('fee_charges').select('id,student_id,description,amount,academic_year,term').order('created_at',{ascending:false}),
+        db.from('payments').select('id,receipt_number,payer_name,amount,received_at').order('received_at',{ascending:false}),
+        db.from('payment_allocations').select('id,payment_id,charge_id,amount')
+      ]);
+      for (const r of [summaryRes,studentRes,familyRes,chargesRes,paymentsRes,allocationsRes]) if (r.error) throw r.error;
+      const summary = summaryRes.data || {};
+      $('finCharges').textContent = money(summary.total_charges);
+      $('finReceived').textContent = money(summary.total_received);
+      $('finAllocated').textContent = money(summary.total_allocated);
+      $('finOutstanding').textContent = money(summary.total_outstanding_fees);
+
+      const studentRows = studentRes.data || [];
+      $('financeStudentCount').textContent = studentRows.length + ' students';
+      $('financeStudentRows').innerHTML = studentRows.length ? studentRows.map(s => '<tr><td><strong>'+esc(s.full_name)+'</strong></td><td>'+esc(s.admission_number)+'</td><td>'+esc(s.class_name)+'</td><td>'+money(s.total_charges)+'</td><td>'+money(s.total_paid)+'</td><td><strong>'+money(s.outstanding_balance)+'</strong></td></tr>').join('') : '<tr><td colspan="6" class="empty">No fee balances found.</td></tr>';
+      const familyRows = familyRes.data || [];
+      $('financeFamilyRows').innerHTML = familyRows.length ? familyRows.map(f => '<tr><td><strong>'+esc(f.guardian_name)+'</strong><br><small>'+esc(f.children_names)+'</small></td><td>'+esc(f.number_of_children)+'</td><td>'+money(f.family_total_charges)+'</td><td>'+money(f.family_total_paid)+'</td><td><strong>'+money(f.family_outstanding_balance)+'</strong></td></tr>').join('') : '<tr><td colspan="5" class="empty">No family balances found.</td></tr>';
+
+      feeCharges = chargesRes.data || [];
+      payments = paymentsRes.data || [];
+      allocations = allocationsRes.data || [];
+      studentsById = new Map(studentRows.map(s => [s.student_id, s]));
+      const chargeById = new Map(feeCharges.map(c => [c.id,c]));
+      $('feeAdjustmentCharge').innerHTML = '<option value="">Select a fee charge</option>' + feeCharges.map(c => {
+        const st = studentsById.get(c.student_id);
+        const who = st ? st.full_name + ' · ' + st.admission_number : 'Student record';
+        return optionHtml(c.id, who + ' — ' + (c.description || 'Fee') + ' — ' + money(c.amount));
+      }).join('');
+      $('correctionPayment').innerHTML = '<option value="">Select an original payment</option>' + payments.map(p => optionHtml(p.id, (p.receipt_number || 'No receipt') + ' — ' + (p.payer_name || 'Unknown payer') + ' — ' + money(p.amount))).join('');
+      updateAllocationOptions();
+      message('Finance data loaded. ' + studentRows.length + ' student account(s), ' + payments.length + ' payment(s), and ' + feeCharges.length + ' fee charge(s).', true);
+    } catch (e) {
+      message('Finance data could not be loaded: ' + (e.message || String(e)), false);
+    } finally {
+      $('financeRefresh').disabled = false;
+    }
+  }
+
+  function updateAllocationOptions() {
+    const paymentId = $('correctionPayment').value;
+    const chargeById = new Map(feeCharges.map(c => [c.id,c]));
+    const matches = allocations.filter(a => a.payment_id === paymentId);
+    $('correctionAllocation').innerHTML = '<option value="">No allocation reversal</option>' + matches.map(a => {
+      const c = chargeById.get(a.charge_id);
+      const st = c ? studentsById.get(c.student_id) : null;
+      const label = (st ? st.full_name : 'Student') + ' — ' + (c?.description || 'Fee') + ' — allocated ' + money(a.amount);
+      return optionHtml(a.id,label);
+    }).join('');
+    $('allocationReversalAmount').value = '0';
+  }
+
+  $('financeRefresh').addEventListener('click', loadFinance);
+  $('correctionPayment').addEventListener('change', updateAllocationOptions);
+
+  $('feeAdjustmentForm').addEventListener('submit', async function (event) {
+    event.preventDefault();
+    if (!leadershipAllowed()) { message('You are not authorised to make fee adjustments.', false); return; }
+    const chargeId = $('feeAdjustmentCharge').value;
+    const amount = Number($('feeAdjustmentAmount').value);
+    const reason = $('feeAdjustmentReason').value.trim();
+    if (!chargeId || !Number.isFinite(amount) || amount === 0 || reason.length < 5) {
+      message('Select a charge, enter a non-zero amount and provide a reason of at least five characters.', false); return;
+    }
+    const button = this.querySelector('button[type="submit"]');
+    button.disabled = true; button.textContent = 'Recording adjustment…';
+    try {
+      const {data,error} = await window.ablaSupabase.rpc('record_fee_charge_adjustment', {
+        p_charge_id: chargeId, p_amount: amount, p_reason: reason
+      });
+      if (error) throw error;
+      this.reset();
+      message('Fee adjustment recorded successfully. Reference: ' + data, true);
+      await loadFinance();
+    } catch (e) {
+      message('Fee adjustment was not recorded: ' + (e.message || String(e)), false);
+    } finally {
+      button.disabled = false; button.textContent = 'Record fee adjustment';
+    }
+  });
+
+  $('paymentCorrectionForm').addEventListener('submit', async function (event) {
+    event.preventDefault();
+    if (!leadershipAllowed()) { message('You are not authorised to process payment corrections.', false); return; }
+    const paymentId = $('correctionPayment').value;
+    const allocationId = $('correctionAllocation').value || null;
+    const allocationAmount = Number($('allocationReversalAmount').value || 0);
+    const paymentAmount = Number($('paymentReversalAmount').value || 0);
+    const type = $('paymentReversalType').value;
+    const reason = $('paymentCorrectionReason').value.trim();
+    if (!paymentId || !Number.isFinite(allocationAmount) || !Number.isFinite(paymentAmount) || allocationAmount < 0 || paymentAmount < 0 || (allocationAmount === 0 && paymentAmount === 0) || (allocationAmount > 0 && !allocationId) || reason.length < 5) {
+      message('Choose a payment, enter a valid reversal amount and provide a reason. Select an allocation if reversing an allocated amount.', false); return;
+    }
+    const button = this.querySelector('button[type="submit"]');
+    button.disabled = true; button.textContent = 'Processing correction…';
+    try {
+      const {data,error} = await window.ablaSupabase.rpc('process_payment_correction', {
+        p_payment_id: paymentId,
+        p_allocation_id: allocationAmount > 0 ? allocationId : null,
+        p_allocation_reversal_amount: allocationAmount,
+        p_payment_reversal_amount: paymentAmount,
+        p_reversal_type: paymentAmount > 0 ? type : null,
+        p_reason: reason
+      });
+      if (error) throw error;
+      this.reset();
+      updateAllocationOptions();
+      message('Payment correction recorded successfully. ' + JSON.stringify(data), true);
+      await loadFinance();
+    } catch (e) {
+      message('Payment correction was not processed: ' + (e.message || String(e)), false);
+    } finally {
+      button.disabled = false; button.textContent = 'Process payment correction';
+    }
+  });
+
+  window.addEventListener('abla:staff-ready', loadFinance);
+  window.addEventListener('storage', () => { if (!leadershipAllowed()) panel.hidden = true; });
+  window.addEventListener('abla:staff-signed-out', () => { panel.hidden = true; });
+})();
+</script>
+</body></html>
