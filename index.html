@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#10243a">
 <title>ABLA 360 — Student Registry</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{--navy:#10243a;--navy2:#183650;--gold:#d5a52b;--ink:#172433;--muted:#667789;--bg:#f3f6f9;--line:#dce4eb;--white:#fff;--red:#b42318;--green:#16794b}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
@@ -23,9 +24,20 @@ table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:11px 9px
 </head>
 <body>
 <header><div class="brand"><div class="mark">A</div><div><h1>ABLA 360</h1><p>WE INSPIRE, WE LEARN, WE LINK.</p></div></div></header>
-<main>
+<section id="ablaAuth" style="max-width:520px;margin:24px auto;padding:18px;background:white;border:1px solid #dce4eb;border-top:4px solid #d5a52b;border-radius:13px;box-shadow:0 8px 28px #10243a12">
+ <h2 style="margin:0 0 6px;color:#10243a">Staff sign-in</h2>
+ <p style="margin:0 0 14px;color:#667789;font-size:13px">Sign in with your authorised ABLA 360 staff account to open the Student Registry.</p>
+ <form id="ablaAuthForm">
+  <div style="margin-bottom:10px"><label for="ablaAuthEmail">Email address</label><input id="ablaAuthEmail" type="email" autocomplete="username" required></div>
+  <div style="margin-bottom:12px"><label for="ablaAuthPassword">Password</label><input id="ablaAuthPassword" type="password" autocomplete="current-password" required></div>
+  <button type="submit" class="gold" style="width:100%">Sign in</button>
+ </form>
+ <p id="ablaAuthMessage" role="status" style="font-size:13px;margin:12px 0 0;color:#425466">Please sign in.</p>
+ <button id="ablaSignOut" class="secondary" type="button" hidden>Sign out</button>
+</section>
+<main id="ablaMain" hidden>
  <div class="topline"><div><div class="eyebrow">Student management · Phase 1</div><h2>Student Registry</h2></div><div class="actions"><button class="secondary" id="exportBtn">Export backup</button><button class="secondary" id="importBtn">Import backup</button><button class="gold" id="addBtn">＋ Register student</button><input type="file" id="importFile" accept=".json,application/json" hidden></div></div>
- <div class="notice"><b>Important:</b> This first version saves records in this browser on this device. Export a backup regularly. It is not yet a shared cloud database and does not include staff logins. Use test records until a secure, multi-user version is set up.</div>
+ <div class="notice"><b>Data status:</b> Staff sign-in is checked through Supabase. Student records in this build are still stored in this browser on this device; cloud student synchronisation has not yet been enabled. Use test records only, export backups regularly, and do not enter live pupil information until cloud access controls and synchronisation have been tested.</div>
  <section class="cards">
   <div class="card"><div class="label">REGISTERED STUDENTS</div><div class="num" id="total">0</div><div class="sub">All saved student records</div></div>
   <div class="card"><div class="label">ACTIVE STUDENTS</div><div class="num" id="active">0</div><div class="sub">Currently enrolled</div></div>
@@ -292,5 +304,78 @@ load();render();
   });
 })();
 
+</script>
+<script>
+(function () {
+  const SUPABASE_URL = 'https://ffpxqqwtxfffmvmacweo.supabase.co';
+  const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_-IpVH-u4tDWC9jxO4tcfww_UnvIl-og';
+  const authBox = document.getElementById('ablaAuth');
+  const app = document.getElementById('ablaMain');
+  const form = document.getElementById('ablaAuthForm');
+  const email = document.getElementById('ablaAuthEmail');
+  const password = document.getElementById('ablaAuthPassword');
+  const message = document.getElementById('ablaAuthMessage');
+  const signOut = document.getElementById('ablaSignOut');
+  const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+  function showSignedOut(text) {
+    app.hidden = true;
+    form.hidden = false;
+    signOut.hidden = true;
+    authBox.hidden = false;
+    message.textContent = text || 'Please sign in.';
+    password.value = '';
+  }
+
+  async function verifySession(session) {
+    if (!session) { showSignedOut('Please sign in with your authorised staff account.'); return; }
+    message.textContent = 'Checking your staff authorisation...';
+    const { data: profile, error } = await db
+      .from('staff_profiles')
+      .select('full_name, role, is_active')
+      .eq('user_id', session.user.id)
+      .maybeSingle();
+    if (error) {
+      message.textContent = 'Staff verification failed: ' + error.message;
+      await db.auth.signOut();
+      return;
+    }
+    if (!profile || profile.is_active !== true) {
+      await db.auth.signOut();
+      showSignedOut('Access denied. An active ABLA staff profile was not found.');
+      return;
+    }
+    form.hidden = true;
+    signOut.hidden = false;
+    message.textContent = 'Signed in: ' + profile.full_name + ' · Role: ' + profile.role;
+    app.hidden = false;
+  }
+
+  form.addEventListener('submit', async function (event) {
+    event.preventDefault();
+    message.textContent = 'Signing in...';
+    const { data, error } = await db.auth.signInWithPassword({
+      email: email.value.trim(), password: password.value
+    });
+    if (error) { message.textContent = 'Sign-in failed: ' + error.message; return; }
+    await verifySession(data.session);
+  });
+
+  signOut.addEventListener('click', async function () {
+    message.textContent = 'Signing out...';
+    const { error } = await db.auth.signOut();
+    if (error) { message.textContent = 'Sign-out failed: ' + error.message; return; }
+    showSignedOut('You have signed out.');
+  });
+
+  db.auth.getSession().then(({ data, error }) => {
+    if (error) { showSignedOut('Could not check session: ' + error.message); return; }
+    verifySession(data.session);
+  });
+
+  db.auth.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_OUT') showSignedOut('You have signed out.');
+  });
+})();
 </script>
 </body></html>
