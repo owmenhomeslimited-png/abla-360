@@ -67,10 +67,10 @@ table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:11px 9px
   </div>
   <div class="panel" style="padding:12px;margin-top:12px">
    <h3 style="margin-top:0">Authorised fee adjustment</h3>
-   <p style="font-size:13px;color:#667789">Choose an original fee charge. Enter a positive amount to increase it or a negative amount to reduce it. The system will reject a reduction that falls below the amount already paid.</p>
+   <p style="font-size:13px;color:#667789">Choose an original fee charge, select whether to increase or reduce it, then enter the amount using numbers only. The system will reject a reduction that falls below the amount already paid.</p>
    <form id="feeAdjustmentForm">
     <div class="field"><label for="feeAdjustmentCharge">Fee charge *</label><select id="feeAdjustmentCharge" required><option value="">Loading fee charges…</option></select></div>
-    <div class="grid2"><div class="field"><label for="feeAdjustmentAmount">Adjustment amount (GHS) *</label><input id="feeAdjustmentAmount" type="number" step="0.01" required placeholder="e.g. -10.00"></div><div class="field"><label for="feeAdjustmentReason">Reason *</label><input id="feeAdjustmentReason" required minlength="5" placeholder="Explain why the fee is changing"></div></div>
+    <div class="grid2"><div class="field"><label for="feeAdjustmentDirection">Adjustment action *</label><select id="feeAdjustmentDirection" required><option value="increase">Increase the charge</option><option value="reduce">Reduce the charge</option></select></div><div class="field"><label for="feeAdjustmentAmount">Amount (GHS) *</label><input id="feeAdjustmentAmount" type="number" min="0.01" step="0.01" inputmode="decimal" required placeholder="e.g. 40.00"></div><div class="field" style="grid-column:1/-1"><label for="feeAdjustmentReason">Reason *</label><input id="feeAdjustmentReason" required minlength="5" placeholder="Explain why the fee is changing"></div></div>
     <div class="formactions"><button class="gold" type="submit">Record fee adjustment</button></div>
    </form>
   </div>
@@ -683,9 +683,11 @@ load();render();
     event.preventDefault();
     if (!leadershipAllowed()) { message('You are not authorised to make fee adjustments.', false); return; }
     const chargeId = $('feeAdjustmentCharge').value;
-    const amount = Number($('feeAdjustmentAmount').value);
+    const enteredAmount = Number($('feeAdjustmentAmount').value);
+    const direction = $('feeAdjustmentDirection').value;
+    const amount = direction === 'reduce' ? -enteredAmount : enteredAmount;
     const reason = $('feeAdjustmentReason').value.trim();
-    if (!chargeId || !Number.isFinite(amount) || amount === 0 || reason.length < 5) {
+    if (!chargeId || !Number.isFinite(enteredAmount) || enteredAmount <= 0 || !['increase','reduce'].includes(direction) || reason.length < 5) {
       message('Select a charge, enter a non-zero amount and provide a reason of at least five characters.', false); return;
     }
     const button = this.querySelector('button[type="submit"]');
