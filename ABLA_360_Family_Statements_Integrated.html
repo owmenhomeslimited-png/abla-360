@@ -1,0 +1,920 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#10243a">
+<title>ABLA 360 — Student Registry</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--navy:#10243a;--navy2:#183650;--gold:#d5a52b;--ink:#172433;--muted:#667789;--bg:#f3f6f9;--line:#dce4eb;--white:#fff;--red:#b42318;--green:#16794b}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+header{background:var(--navy);color:white;padding:18px max(18px,calc((100% - 1180px)/2));border-bottom:4px solid var(--gold)}
+.brand{display:flex;align-items:center;gap:12px}.mark{width:42px;height:42px;border:2px solid var(--gold);border-radius:12px;display:grid;place-items:center;color:var(--gold);font-weight:900;font-size:18px}.brand h1{font-size:20px;margin:0;letter-spacing:.5px}.brand p{margin:2px 0 0;color:#d6e0e8;font-size:12px}
+main{max-width:1180px;margin:22px auto;padding:0 16px 40px}.topline{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px}.eyebrow{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:1px;font-weight:700}.topline h2{margin:3px 0 0;font-size:24px}.actions{display:flex;gap:8px;flex-wrap:wrap}
+button,.button{border:0;border-radius:9px;padding:10px 14px;font-weight:700;font-size:14px;cursor:pointer;background:var(--navy);color:white}.secondary{background:white;color:var(--navy);border:1px solid var(--line)}.gold{background:var(--gold);color:#1b2630}.danger{background:#fff0ef;color:var(--red);border:1px solid #ffd1cd}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}.card{background:white;border:1px solid var(--line);border-radius:13px;padding:16px}.card .label{color:var(--muted);font-size:12px;font-weight:700}.card .num{font-size:27px;font-weight:800;margin-top:5px;color:var(--navy)}.card .sub{font-size:12px;color:var(--muted)}
+.panel{background:white;border:1px solid var(--line);border-radius:13px;padding:16px;margin-bottom:16px}.panelhead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;flex-wrap:wrap}.panel h3{margin:0;font-size:17px}.searchrow{display:flex;gap:9px;flex-wrap:wrap}.searchrow input{flex:1;min-width:220px}
+input,select,textarea{width:100%;border:1px solid #cbd6df;border-radius:8px;padding:10px 11px;background:white;color:var(--ink);font:inherit}input:focus,select:focus,textarea:focus{outline:2px solid #e8c96f;border-color:var(--gold)}label{display:block;font-size:12px;font-weight:700;color:#425466;margin:0 0 5px}.field{margin-bottom:12px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:11px 9px;border-bottom:1px solid #edf1f4;font-size:13px}th{font-size:11px;text-transform:uppercase;color:var(--muted);letter-spacing:.5px}td strong{color:var(--navy)}.tablewrap{overflow-x:auto}.empty{text-align:center;padding:28px;color:var(--muted)}.pill{display:inline-block;padding:4px 8px;border-radius:20px;background:#eef3f7;color:#35516a;font-size:11px;font-weight:700}.pill.active{background:#e8f6ee;color:var(--green)}.birthdaylist{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.birthday{border:1px solid var(--line);border-radius:10px;padding:12px}.birthday b{display:block;color:var(--navy)}.birthday small{color:var(--muted)}
+.modal{display:none;position:fixed;inset:0;background:#081725a8;z-index:5;padding:16px;overflow:auto}.modal.show{display:block}.dialog{max-width:760px;margin:20px auto;background:white;border-radius:15px;padding:20px;box-shadow:0 18px 60px #0003}.dialoghead{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}.dialoghead h2{margin:0;font-size:21px}.close{background:#eef2f5;color:var(--navy);padding:7px 11px}.formactions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;flex-wrap:wrap}.profilegrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.info{padding:11px;background:#f5f7f9;border-radius:9px}.info small{display:block;color:var(--muted);font-size:11px;font-weight:700;text-transform:uppercase}.info b{display:block;margin-top:3px;overflow-wrap:anywhere}.notice{background:#fff8e6;border:1px solid #f0d68b;padding:12px;border-radius:10px;color:#594617;font-size:13px;margin-bottom:16px}.foot{color:var(--muted);font-size:12px;text-align:center;margin:20px 0}
+@media(max-width:760px){.cards{grid-template-columns:repeat(2,1fr)}.grid3{grid-template-columns:1fr 1fr}.birthdaylist{grid-template-columns:1fr 1fr}main{margin-top:16px}.topline h2{font-size:21px}}
+@media(max-width:480px){.grid2,.grid3,.profilegrid{grid-template-columns:1fr}.birthdaylist{grid-template-columns:1fr}.cards{gap:8px}.card{padding:12px}.card .num{font-size:23px}.actions button{flex:1}.dialog{padding:15px;margin:4px auto}}
+</style>
+</head>
+<body>
+<header><div class="brand"><div class="mark">A</div><div><h1>ABLA 360</h1><p>WE INSPIRE, WE LEARN, WE LINK.</p></div></div></header>
+<section id="ablaAuth" style="max-width:520px;margin:24px auto;padding:18px;background:white;border:1px solid #dce4eb;border-top:4px solid #d5a52b;border-radius:13px;box-shadow:0 8px 28px #10243a12">
+ <h2 style="margin:0 0 6px;color:#10243a">Staff sign-in</h2>
+ <p style="margin:0 0 14px;color:#667789;font-size:13px">Sign in with your authorised ABLA 360 staff account to open the Student Registry.</p>
+ <form id="ablaAuthForm">
+  <div style="margin-bottom:10px"><label for="ablaAuthEmail">Email address</label><input id="ablaAuthEmail" type="email" autocomplete="username" required></div>
+  <div style="margin-bottom:12px"><label for="ablaAuthPassword">Password</label><input id="ablaAuthPassword" type="password" autocomplete="current-password" required></div>
+  <button type="submit" class="gold" style="width:100%">Sign in</button>
+ </form>
+ <p id="ablaAuthMessage" role="status" style="font-size:13px;margin:12px 0 0;color:#425466">Please sign in.</p>
+ <button id="ablaSignOut" class="secondary" type="button" hidden>Sign out</button>
+</section>
+<main id="ablaMain" hidden>
+ <div class="topline"><div><div class="eyebrow">Student management · Phase 1</div><h2>Student Registry</h2></div><div class="actions"><button class="secondary" id="exportBtn">Export backup</button><button class="secondary" id="importBtn" disabled title="Cloud import will be enabled after migration safeguards are added">Import backup (temporarily unavailable)</button><button class="gold" id="addBtn">＋ Register student</button><input type="file" id="importFile" accept=".json,application/json" hidden></div></div>
+ <div class="notice" id="cloudStatus"><b>Cloud status:</b> Checking authorised access and student records. Your earlier device records will be preserved separately and will not be uploaded automatically. Use fictional test records only during this stage.</div>
+ <section class="cards">
+  <div class="card"><div class="label">REGISTERED STUDENTS</div><div class="num" id="total">0</div><div class="sub">All saved student records</div></div>
+  <div class="card"><div class="label">ACTIVE STUDENTS</div><div class="num" id="active">0</div><div class="sub">Currently enrolled</div></div>
+  <div class="card"><div class="label">BIRTHDAYS THIS MONTH</div><div class="num" id="monthBirthdays">0</div><div class="sub">Based on recorded dates of birth</div></div>
+  <div class="card"><div class="label">UPCOMING BIRTHDAYS</div><div class="num" id="upcoming">0</div><div class="sub">Next 30 days</div></div>
+ </section>
+ <section class="panel"><div class="panelhead"><h3>Find a student</h3><span class="pill">Instant search</span></div><div class="searchrow"><input id="search" placeholder="Search name, admission number, class or parent phone…" autocomplete="off"><select id="classFilter" style="max-width:180px"><option value="">All classes</option><option>Crèche</option><option>Nursery 1</option><option>Nursery 2</option><option>KG 1</option><option>KG 2</option><option>Class 1</option><option>Class 2</option><option>Class 3</option><option>Class 4</option><option>Class 5</option><option>Class 6</option></select></div></section>
+ <section class="panel"><div class="panelhead"><h3>Student records</h3><span class="pill" id="shown">0 records</span></div><div class="tablewrap"><table><thead><tr><th>Student</th><th>Admission No.</th><th>Class</th><th>Date of birth</th><th>Status</th><th>Profile</th></tr></thead><tbody id="studentRows"></tbody></table><div class="empty" id="empty">No student records yet. Select “Register student” to add the first pupil.</div></div></section>
+ <section class="panel"><div class="panelhead"><h3>Upcoming birthdays</h3><span class="pill">Next 30 days</span></div><div id="birthdayRows" class="birthdaylist"><div class="empty">No upcoming birthdays recorded.</div></div></section>
+ <section class="panel" id="financeModule" hidden>
+  <div class="panelhead"><div><div class="eyebrow">Leadership controls</div><h3>School Finance & Corrections</h3></div><button class="secondary" type="button" id="financeRefresh">Refresh finance data</button></div>
+  <div class="notice" style="margin-bottom:12px">Leadership-only area. Corrections are recorded as new, traceable entries; original payments and fee charges are not overwritten. Use fictional test records while testing.</div>
+  <div id="financeMessage" role="status" style="font-size:13px;margin:8px 0 14px;color:#425466">Finance data has not been loaded yet.</div>
+  <div class="cards" style="grid-template-columns:repeat(4,1fr)">
+   <div class="card"><div class="label">FEES CHARGED</div><div class="num" id="finCharges">—</div></div>
+   <div class="card"><div class="label">NET RECEIVED</div><div class="num" id="finReceived">—</div></div>
+   <div class="card"><div class="label">ALLOCATED</div><div class="num" id="finAllocated">—</div></div>
+   <div class="card"><div class="label">OUTSTANDING</div><div class="num" id="finOutstanding">—</div></div>
+  </div>
+  <div class="panel" style="padding:12px;margin-top:12px">
+   <div class="panelhead"><h3>Student fee balances</h3><span class="pill" id="financeStudentCount">0 students</span></div>
+   <div class="tablewrap"><table><thead><tr><th>Student</th><th>Admission No.</th><th>Class</th><th>Charges</th><th>Paid</th><th>Outstanding</th></tr></thead><tbody id="financeStudentRows"><tr><td colspan="6" class="empty">No data loaded.</td></tr></tbody></table></div>
+  </div>
+  <div class="panel" style="padding:12px;margin-top:12px">
+   <div class="panelhead"><h3>Family fee balances</h3><span class="pill">Combined accounts</span></div>
+   <div class="tablewrap"><table><thead><tr><th>Guardian / family</th><th>Children</th><th>Charges</th><th>Paid</th><th>Outstanding</th><th>Statement</th></tr></thead><tbody id="financeFamilyRows"><tr><td colspan="5" class="empty">No data loaded.</td></tr></tbody></table></div>
+  </div>
+  <div class="panel" style="padding:12px;margin-top:12px">
+   <h3 style="margin-top:0">Authorised fee adjustment</h3>
+   <p style="font-size:13px;color:#667789">Choose an original fee charge, select whether to increase or reduce it, then enter the amount using numbers only. The system will reject a reduction that falls below the amount already paid.</p>
+   <form id="feeAdjustmentForm">
+    <div class="field"><label for="feeAdjustmentCharge">Fee charge *</label><select id="feeAdjustmentCharge" required><option value="">Loading fee charges…</option></select></div>
+    <div class="grid2"><div class="field"><label for="feeAdjustmentDirection">Adjustment action *</label><select id="feeAdjustmentDirection" required><option value="increase">Increase the charge</option><option value="reduce">Reduce the charge</option></select></div><div class="field"><label for="feeAdjustmentAmount">Amount (GHS) *</label><input id="feeAdjustmentAmount" type="number" min="0.01" step="0.01" inputmode="decimal" required placeholder="e.g. 40.00"></div><div class="field" style="grid-column:1/-1"><label for="feeAdjustmentReason">Reason *</label><input id="feeAdjustmentReason" required minlength="5" placeholder="Explain why the fee is changing"></div></div>
+    <div class="formactions"><button class="gold" type="submit">Record fee adjustment</button></div>
+   </form>
+  </div>
+  <div class="panel" style="padding:12px;margin-top:12px">
+   <h3 style="margin-top:0">Authorised payment correction</h3>
+   <p style="font-size:13px;color:#667789">Select the original payment. If money was allocated to a fee, reverse the relevant allocation first. Then enter the amount being refunded, voided or corrected. Both actions are processed together.</p>
+   <form id="paymentCorrectionForm">
+    <div class="field"><label for="correctionPayment">Original payment *</label><select id="correctionPayment" required><option value="">Loading payments…</option></select></div>
+    <div class="field"><label for="correctionAllocation">Allocation to reverse (optional)</label><select id="correctionAllocation"><option value="">No allocation reversal</option></select></div>
+    <div class="grid2">
+     <div class="field"><label for="allocationReversalAmount">Allocation reversal amount (GHS)</label><input id="allocationReversalAmount" type="number" min="0" step="0.01" value="0"></div>
+     <div class="field"><label for="paymentReversalAmount">Payment refund / reversal amount (GHS)</label><input id="paymentReversalAmount" type="number" min="0" step="0.01" value="0"></div>
+     <div class="field"><label for="paymentReversalType">Payment correction type</label><select id="paymentReversalType"><option value="refund">Refund</option><option value="void">Void</option><option value="correction">Correction</option></select></div>
+     <div class="field"><label for="paymentCorrectionReason">Reason *</label><input id="paymentCorrectionReason" required minlength="5" placeholder="Explain the correction"></div>
+    </div>
+    <div class="formactions"><button class="gold" type="submit">Process payment correction</button></div>
+   </form>
+  </div>
+ </section>
+  <div class="panel" id="invoiceModule" style="margin-top:14px;padding:14px">
+   <div class="panelhead"><div><div class="eyebrow">School billing</div><h3>Invoices & Statements</h3></div><button class="secondary" type="button" id="invoiceRefresh">Refresh invoices</button></div>
+   <p style="font-size:13px;color:#667789">Create one invoice for one student using existing fee charges. A charge can belong to only one invoice. Invoice creation does not record a payment.</p>
+   <div id="invoiceMessage" role="status" style="font-size:13px;margin:8px 0;color:#425466">Sign in with an authorised staff account to load invoices.</div>
+   <form id="invoiceCreateForm">
+    <div class="grid2">
+     <div class="field"><label for="invoiceStudent">Student *</label><select id="invoiceStudent" required><option value="">Loading students…</option></select></div>
+     <div class="field"><label for="invoiceYear">Academic year *</label><input id="invoiceYear" required placeholder="e.g. 2026/2027" value="2026/2027"></div>
+     <div class="field"><label for="invoiceTerm">Term *</label><select id="invoiceTerm" required><option>Term 1</option><option>Term 2</option><option>Term 3</option></select></div>
+     <div class="field"><label for="invoiceIssueDate">Issue date *</label><input id="invoiceIssueDate" type="date" required></div>
+     <div class="field"><label for="invoiceDueDate">Due date (optional)</label><input id="invoiceDueDate" type="date"></div>
+    </div>
+    <div class="field"><label>Uninvoiced fee charges *</label><div id="invoiceChargeChoices" class="notice">Choose a student, academic year and term to view available charges.</div></div>
+    <div class="formactions"><button class="gold" id="createInvoiceButton" type="submit">Create student invoice</button></div>
+   </form>
+   <div class="panel" style="padding:12px;margin-top:14px">
+    <div class="panelhead"><h3>Recent invoices</h3><span class="pill">Live balances</span></div>
+    <div class="tablewrap"><table><thead><tr><th>Invoice</th><th>Student</th><th>Term</th><th>Total</th><th>Paid</th><th>Balance</th><th>Status</th><th>Print</th></tr></thead><tbody id="invoiceRows"><tr><td colspan="8" class="empty">No invoices loaded.</td></tr></tbody></table></div>
+   </div>
+  </div>
+
+ <section class="panel" id="receiptModule" style="margin-top:14px;padding:14px">
+  <div class="panelhead"><div><div class="eyebrow">School finance</div><h3>Payment Receipts</h3></div><button class="secondary" type="button" id="receiptRefresh">Refresh receipts</button></div>
+  <p style="font-size:13px;color:#667789">View and print receipts from payments already recorded in ABLA 360. Opening or printing a receipt never records another payment.</p>
+  <div id="receiptMessage" role="status" style="font-size:13px;margin:8px 0;color:#425466">Sign in with an authorised finance or leadership account to load receipts.</div>
+  <div class="tablewrap"><table><thead><tr><th>Receipt number</th><th>Payer</th><th>Date</th><th>Amount</th><th>Receipt</th></tr></thead><tbody id="receiptRows"><tr><td colspan="5" class="empty">No receipts loaded.</td></tr></tbody></table></div>
+ </section>
+ <div class="foot">Ampontuah Best Link Academy · ABLA 360 · Student Registry</div>
+</main>
+<div class="modal" id="formModal"><div class="dialog"><div class="dialoghead"><h2 id="formTitle">Register student</h2><button class="close" id="closeForm">✕</button></div>
+<form id="studentForm">
+ <div class="eyebrow">A. Student identity</div>
+ <div class="grid2">
+  <div class="field"><label for="admission">Admission number *</label><input id="admission" required placeholder="e.g. ABLA-2026-001"></div>
+  <div class="field"><label for="fullName">Full name *</label><input id="fullName" required placeholder="Student's full name"></div>
+  <div class="field"><label for="dob">Date of birth</label><input id="dob" type="date"></div>
+  <div class="field"><label for="gender">Gender</label><select id="gender"><option value="">Select</option><option>Female</option><option>Male</option><option>Prefer not to say</option></select></div>
+  <div class="field"><label for="className">Current class *</label><select id="className" required><option value="">Select class</option><option>Crèche</option><option>Nursery 1</option><option>Nursery 2</option><option>KG 1</option><option>KG 2</option><option>Class 1</option><option>Class 2</option><option>Class 3</option><option>Class 4</option><option>Class 5</option><option>Class 6</option></select></div>
+  <div class="field"><label for="admissionDate">Date admitted</label><input id="admissionDate" type="date"></div>
+  <div class="field"><label for="status">Enrolment status</label><select id="status"><option>Active</option><option>Withdrawn</option><option>Graduated</option><option>Transferred</option></select></div>
+ </div>
+ <div class="eyebrow">B. Parent / guardian</div>
+ <div class="grid2">
+  <div class="field"><label for="parentName">Parent/guardian name</label><input id="parentName"></div>
+  <div class="field"><label for="relationship">Relationship</label><select id="relationship"><option value="">Select</option><option>Mother</option><option>Father</option><option>Guardian</option><option>Other</option></select></div>
+  <div class="field"><label for="phone">Primary phone</label><input id="phone" type="tel" placeholder="e.g. 024 XXX XXXX"></div>
+  <div class="field"><label for="phone2">Alternative phone</label><input id="phone2" type="tel"></div>
+  <div class="field" style="grid-column:1/-1"><label for="address">Residential address / area</label><input id="address"></div>
+ </div>
+ <div class="eyebrow">C. Interests and development</div>
+ <div class="grid2">
+  <div class="field"><label for="interests">Interests</label><textarea id="interests" rows="2" placeholder="What topics or activities attract the child?"></textarea></div>
+  <div class="field"><label for="hobbies">Hobbies</label><textarea id="hobbies" rows="2" placeholder="e.g. reading, football, drawing"></textarea></div>
+  <div class="field"><label for="talents">Talents / strengths observed</label><textarea id="talents" rows="2"></textarea></div>
+  <div class="field"><label for="favourite">Favourite subject / activity</label><input id="favourite"></div>
+  <div class="field"><label for="aspirations">What the child hopes to become</label><input id="aspirations"></div>
+  <div class="field"><label for="learning">Learning preferences / support that helps</label><textarea id="learning" rows="2"></textarea></div>
+  <div class="field"><label for="character">Positive character observations</label><textarea id="character" rows="2" placeholder="Record specific, dated observations where possible."></textarea></div>
+  <div class="field"><label for="conduct">Conduct / development notes</label><textarea id="conduct" rows="2" placeholder="Describe observable behaviour and support provided."></textarea></div>
+ </div>
+ <div class="field"><label for="notes">Other important notes</label><textarea id="notes" rows="3"></textarea></div>
+ <div class="formactions"><button type="button" class="secondary" id="cancelForm">Cancel</button><button type="submit" class="gold">Save student record</button></div>
+</form></div></div>
+<div class="modal" id="profileModal"><div class="dialog"><div class="dialoghead"><h2>Student 360 Profile</h2><button class="close" id="closeProfile">✕</button></div><div id="profileContent"></div><div class="formactions"><button class="danger" id="deleteStudent">Delete record</button><button class="secondary" id="editStudent">Edit record</button><button class="gold" id="printProfile">Print profile</button></div></div></div>
+<script>
+(function(){
+const KEY='abla360_students_v1';let students=[];let editingId=null;let selectedId=null;
+const $=id=>document.getElementById(id);
+function load(){try{const x=JSON.parse(localStorage.getItem(KEY)||'[]');students=Array.isArray(x)?x.filter(validRecord):[]}catch(e){students=[]}}
+function validRecord(s){return s&&typeof s==='object'&&typeof s.id==='string'&&typeof s.fullName==='string'&&typeof s.admission==='string'}
+function save(){localStorage.setItem(KEY,JSON.stringify(students));render()}
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function dateText(v){if(!v)return 'Not recorded';const d=new Date(v+'T12:00:00');return isNaN(d)?'Not recorded':d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}
+function daysToBirthday(dob){if(!dob)return null;const d=new Date(dob+'T12:00:00');if(isNaN(d))return null;const now=new Date();let next=new Date(now.getFullYear(),d.getMonth(),d.getDate());const today=new Date(now.getFullYear(),now.getMonth(),now.getDate());if(next<today)next.setFullYear(now.getFullYear()+1);return Math.round((next-today)/86400000)}
+function ageOnNextBirthday(dob){if(!dob)return '';const d=new Date(dob+'T12:00:00');const now=new Date();let y=now.getFullYear();if(new Date(y,d.getMonth(),d.getDate())<new Date(now.getFullYear(),now.getMonth(),now.getDate()))y++;return y-d.getFullYear()}
+function render(){
+ $('total').textContent=students.length;$('active').textContent=students.filter(s=>s.status==='Active').length;
+ const now=new Date(),m=now.getMonth();$('monthBirthdays').textContent=students.filter(s=>s.dob&&new Date(s.dob+'T12:00:00').getMonth()===m).length;
+ $('upcoming').textContent=students.filter(s=>{const n=daysToBirthday(s.dob);return n!==null&&n<=30}).length;
+ const q=$('search').value.trim().toLowerCase(),cl=$('classFilter').value;
+ const list=students.filter(s=>(!cl||s.className===cl)&&(!q||[s.fullName,s.admission,s.className,s.parentName,s.phone].some(v=>(v||'').toLowerCase().includes(q)))).sort((a,b)=>a.fullName.localeCompare(b.fullName));
+ $('shown').textContent=list.length+' record'+(list.length===1?'':'s');
+ $('studentRows').innerHTML=list.map(s=>`<tr><td><strong>${esc(s.fullName)}</strong><br><span style="color:#667789">${esc(s.parentName||'Parent not recorded')}</span></td><td>${esc(s.admission)}</td><td>${esc(s.className)}</td><td>${dateText(s.dob)}</td><td><span class="pill ${s.status==='Active'?'active':''}">${esc(s.status||'Active')}</span></td><td><button class="secondary viewBtn" data-id="${esc(s.id)}">View</button></td></tr>`).join('');
+ $('empty').style.display=list.length?'none':'block';
+ const b=students.map(s=>({...s,days:daysToBirthday(s.dob)})).filter(s=>s.days!==null&&s.days<=30).sort((a,b)=>a.days-b.days);
+ $('birthdayRows').innerHTML=b.length?b.map(s=>`<div class="birthday"><b>${esc(s.fullName)}</b><small>${s.days===0?'Birthday today':s.days===1?'Tomorrow':'In '+s.days+' days'} · ${dateText(s.dob).replace(/,\s*\d{4}$/,'')}</small><div style="margin-top:7px"><span class="pill">Turning ${esc(ageOnNextBirthday(s.dob))}</span></div></div>`).join(''):'<div class="empty">No upcoming birthdays recorded. Add dates of birth to see the birthday calendar.</div>';
+ document.querySelectorAll('.viewBtn').forEach(btn=>btn.addEventListener('click',()=>showProfile(btn.dataset.id)));
+}
+const fields=['admission','fullName','dob','gender','className','admissionDate','status','parentName','relationship','phone','phone2','address','interests','hobbies','talents','favourite','aspirations','learning','character','conduct','notes'];
+function openForm(s){editingId=s?s.id:null;$('studentForm').dataset.cloudId=s?.cloudId||'';$('studentForm').reset();$('formTitle').textContent=s?'Edit student record':'Register student';fields.forEach(k=>$(k).value=s?.[k]||'');$('formModal').classList.add('show')}
+function closeForm(){$('formModal').classList.remove('show')}
+$('addBtn').onclick=()=>openForm(null);$('closeForm').onclick=closeForm;$('cancelForm').onclick=closeForm;
+$('studentForm').onsubmit=e=>{e.preventDefault();const r={};fields.forEach(k=>r[k]=$(k).value.trim());r.status=r.status||'Active';r.id=editingId||('st_'+Date.now()+'_'+Math.random().toString(36).slice(2,8));if(students.some(s=>s.admission.toLowerCase()===r.admission.toLowerCase()&&s.id!==r.id)){alert('That admission number is already in use. Please check it.');return}if(editingId){students=students.map(s=>s.id===editingId?r:s)}else{students.push(r)}save();closeForm();};
+function info(label,value){return `<div class="info"><small>${esc(label)}</small><b>${esc(value||'Not recorded').replace(/\n/g,'<br>')}</b></div>`}
+function showProfile(id){const s=students.find(x=>x.id===id);if(!s)return;selectedId=id;
+$('profileContent').innerHTML=`<div style="margin-bottom:14px"><div class="eyebrow">${esc(s.admission)} · ${esc(s.status)}</div><h2 style="margin:4px 0;color:#10243a">${esc(s.fullName)}</h2><span class="pill">${esc(s.className)}</span></div>
+<div class="eyebrow" style="margin:14px 0 8px">Student identity</div><div class="profilegrid">${info('Date of birth',dateText(s.dob))}${info('Gender',s.gender)}${info('Date admitted',dateText(s.admissionDate))}${info('Age',s.dob?(()=>{let n=new Date(),d=new Date(s.dob+'T12:00:00');let a=n.getFullYear()-d.getFullYear();if(n.getMonth()<d.getMonth()||(n.getMonth()===d.getMonth()&&n.getDate()<d.getDate()))a--;return a+' years'} )():'Not recorded')}</div>
+<div class="eyebrow" style="margin:16px 0 8px">Parent / guardian</div><div class="profilegrid">${info('Name',s.parentName)}${info('Relationship',s.relationship)}${info('Primary phone',s.phone)}${info('Alternative phone',s.phone2)}${info('Address',s.address)}</div>
+<div class="eyebrow" style="margin:16px 0 8px">Interests and development</div><div class="profilegrid">${info('Interests',s.interests)}${info('Hobbies',s.hobbies)}${info('Talents / strengths',s.talents)}${info('Favourite subject / activity',s.favourite)}${info('Aspirations',s.aspirations)}${info('Learning preferences',s.learning)}${info('Positive character observations',s.character)}${info('Conduct / development notes',s.conduct)}${info('Other notes',s.notes)}</div>`;
+$('profileModal').classList.add('show')}
+$('closeProfile').onclick=()=>$('profileModal').classList.remove('show');
+$('editStudent').onclick=()=>{const s=students.find(x=>x.id===selectedId);$('profileModal').classList.remove('show');openForm(s)};
+$('deleteStudent').onclick=()=>{if(!selectedId)return;if(confirm('Delete this student record from this device? This cannot be undone unless you have a backup.')){students=students.filter(s=>s.id!==selectedId);save();$('profileModal').classList.remove('show')}};
+$('printProfile').onclick=()=>{const content=$('profileContent').innerHTML;const w=window.open('','_blank');if(!w){alert('Please allow pop-ups to print this profile.');return}w.document.write('<html><head><title>ABLA Student Profile</title><style>body{font:14px Arial;padding:24px;color:#172433}h2{color:#10243a}.profilegrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.info{padding:9px;background:#f3f6f9;border-radius:6px}.info small{display:block;color:#667789;font-size:10px;text-transform:uppercase}.info b{display:block;margin-top:3px}</style></head><body><h1>ABLA 360 — Student Profile</h1>'+content+'</body></html>');w.document.close();w.focus();w.print()};
+$('search').addEventListener('input',render);$('classFilter').addEventListener('change',render);
+$('exportBtn').onclick=()=>{const blob=new Blob([JSON.stringify({app:'ABLA 360',version:1,exportedAt:new Date().toISOString(),students},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='ABLA360-student-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click();URL.revokeObjectURL(a.href)};
+$('importBtn').onclick=()=>$('importFile').click();
+$('importFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const data=JSON.parse(await f.text());const incoming=Array.isArray(data)?data:data.students;if(!Array.isArray(incoming)||!incoming.every(validRecord))throw Error('The file does not contain valid ABLA 360 student records.');if(!confirm('Import '+incoming.length+' records? Existing records with the same admission number will be replaced.'))return;const map=new Map(students.map(s=>[s.admission.toLowerCase(),s]));incoming.forEach(s=>map.set(s.admission.toLowerCase(),s));students=[...map.values()];save();alert('Backup imported successfully.');}catch(err){alert('Import failed: '+err.message)}finally{e.target.value=''}};
+load();render();
+})();
+(function () {
+  const suggestions = {
+    interests: {
+      title: 'Suggested interests',
+      items: [
+        'Reading and books','Mathematics','Science and discovery',
+        'Technology and computers','Building and construction',
+        'Drawing and painting','Music and singing','Dance and drama',
+        'Nature and animals','Farming and gardening','Business and entrepreneurship',
+        'Sports and fitness','Leadership and teamwork','Helping others',
+        'Faith and values','Problem-solving','Creative activities',
+        'Storytelling','Exploring and experimenting'
+      ]
+    },
+    hobbies: {
+      title: 'Suggested hobbies',
+      items: [
+        'Reading','Drawing','Painting','Writing stories','Colouring',
+        'Solving puzzles','Playing chess','Building with blocks',
+        'Playing football','Skipping','Running','Cycling',
+        'Dancing','Singing','Playing musical instruments',
+        'Gardening','Swimming','Playing games','Cooking',
+        'Sewing','Craft making','Storytelling','Acting',
+        'Collecting objects','Teaching friends','Helping at home'
+      ]
+    },
+    talents: {
+      title: 'Suggested talents and strengths',
+      items: [
+        'Creative thinking','Problem-solving','Good communication',
+        'Public speaking','Storytelling','Reading','Writing',
+        'Mathematical reasoning','Scientific curiosity','Drawing',
+        'Painting','Singing','Dancing','Musical ability',
+        'Leadership','Teamwork','Helping others','Sports ability',
+        'Physical coordination','Building and making things',
+        'Organisation','Entrepreneurial thinking','Digital skills',
+        'Observation','Memory','Imagination','Practical skills'
+      ]
+    },
+    favourite: {
+      title: 'Suggested favourite subjects or activities',
+      items: [
+        'English Language','Mathematics','Science','Computing',
+        'Creative Arts','Our World Our People','Reading',
+        'Writing','Drawing','Painting','Music','Dance',
+        'Physical Education','Storytelling','Practical activities',
+        'Group projects','Building activities','Nature exploration'
+      ]
+    },
+    aspirations: {
+      title: 'Suggested future aspirations',
+      items: [
+        'Teacher','Doctor','Nurse','Engineer','Architect',
+        'Lawyer','Scientist','Entrepreneur','Farmer',
+        'Footballer','Athlete','Artist','Musician','Writer',
+        'Journalist','Fashion designer','Chef','Pilot',
+        'Police officer','Soldier','Accountant','Computer programmer',
+        'Software developer','Builder','Electrician','Mechanic',
+        'Veterinarian','Dentist','Researcher','Not yet expressed'
+      ]
+    },
+    learning: {
+      title: 'Suggested learning preferences',
+      items: [
+        'Pictures and visual materials','Demonstrations',
+        'Practical activities','Group learning','Individual learning',
+        'Storytelling','Songs and rhymes','Educational games',
+        'Repetition and practice','Step-by-step explanations',
+        'Extra thinking time','Individual attention',
+        'Hands-on activities','Class discussions',
+        'Movement-based activities','Reading aloud',
+        'Peer learning','Quiet learning environment'
+      ]
+    },
+    character: {
+      title: 'Positive character observations',
+      items: [
+        'Honesty','Responsibility','Self-discipline','Patience',
+        'Courage','Perseverance','Confidence','Humility',
+        'Respect','Independence','Determination','Self-control',
+        'Initiative','Accountability','Kindness','Compassion',
+        'Empathy','Generosity','Cooperation','Sharing',
+        'Forgiveness','Tolerance','Inclusiveness','Teamwork',
+        'Curiosity','Enthusiasm for learning','Creativity',
+        'Problem-solving','Accepting feedback','Helping others',
+        'Leading by example','Fairness'
+      ]
+    },
+    conduct: {
+      title: 'Conduct and development observations',
+      items: [
+        'Follows instructions','Participates in class',
+        'Listens attentively','Respects others',
+        'Shares with classmates','Waits for their turn',
+        'Completes assigned tasks','Helps classmates',
+        'Follows classroom rules','Uses polite language',
+        'Works independently','Works well in a team',
+        'Needs reminders to follow instructions',
+        'Needs support with concentration',
+        'Needs support completing tasks',
+        'Needs help with transitions between activities',
+        'Needs support sharing with others',
+        'Needs help expressing feelings',
+        'Benefits from individual guidance',
+        'Benefits from additional practice',
+        'Shows improvement after guidance',
+        'Needs encouragement to participate'
+      ]
+    }
+  };
+
+  Object.entries(suggestions).forEach(([fieldId, config]) => {
+    const field = document.getElementById(fieldId);
+    if (!field || field.dataset.pickerAdded) return;
+
+    field.dataset.pickerAdded = 'yes';
+
+    const box = document.createElement('div');
+    box.style.cssText =
+      'margin-top:8px;padding:10px;background:#f3f6f9;border-radius:9px';
+
+    const label = document.createElement('label');
+    label.textContent = config.title;
+
+    const select = document.createElement('select');
+    select.multiple = true;
+    select.size = 4;
+    select.style.marginBottom = '8px';
+
+    config.items.forEach(item => {
+      const option = document.createElement('option');
+      option.value = item;
+      option.textContent = item;
+      select.appendChild(option);
+    });
+
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'secondary';
+    button.textContent = '＋ Add selected choices';
+    button.style.width = '100%';
+
+    button.addEventListener('click', () => {
+      const selected = Array.from(select.selectedOptions)
+        .map(option => option.value);
+
+      if (!selected.length) {
+        alert('Please select at least one suggestion.');
+        return;
+      }
+
+      const existing = field.value
+        .split(/[,;\n]+/)
+        .map(value => value.trim())
+        .filter(Boolean);
+
+      const known = new Set(existing.map(value => value.toLowerCase()));
+
+      selected.forEach(value => {
+        if (!known.has(value.toLowerCase())) {
+          existing.push(value);
+          known.add(value.toLowerCase());
+        }
+      });
+
+      field.value = existing.join(', ');
+      select.selectedIndex = -1;
+    });
+
+    box.append(label, select, button);
+    field.parentElement.appendChild(box);
+  });
+})();
+
+</script>
+<script>
+(function () {
+  const SUPABASE_URL = 'https://ffpxqqwtxfffmvmacweo.supabase.co';
+  const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_-IpVH-u4tDWC9jxO4tcfww_UnvIl-og';
+  const authBox = document.getElementById('ablaAuth');
+  const app = document.getElementById('ablaMain');
+  const form = document.getElementById('ablaAuthForm');
+  const email = document.getElementById('ablaAuthEmail');
+  const password = document.getElementById('ablaAuthPassword');
+  const message = document.getElementById('ablaAuthMessage');
+  const signOut = document.getElementById('ablaSignOut');
+  const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+  window.ablaSupabase = db;
+
+  function showSignedOut(text) {
+    window.ablaStaffProfile = null;
+    window.dispatchEvent(new Event('abla:staff-signed-out'));
+    app.hidden = true;
+    form.hidden = false;
+    signOut.hidden = true;
+    authBox.hidden = false;
+    message.textContent = text || 'Please sign in.';
+    password.value = '';
+  }
+
+  async function verifySession(session) {
+    if (!session) { showSignedOut('Please sign in with your authorised staff account.'); return; }
+    message.textContent = 'Checking your staff authorisation...';
+    const { data: profile, error } = await db
+      .from('staff_profiles')
+      .select('full_name, role, is_active')
+      .eq('user_id', session.user.id)
+      .maybeSingle();
+    if (error) {
+      message.textContent = 'Staff verification failed: ' + error.message;
+      await db.auth.signOut();
+      return;
+    }
+    if (!profile || profile.is_active !== true) {
+      await db.auth.signOut();
+      showSignedOut('Access denied. An active ABLA staff profile was not found.');
+      return;
+    }
+    window.ablaStaffProfile = { user_id: session.user.id, full_name: profile.full_name, role: profile.role, is_active: profile.is_active };
+    form.hidden = true;
+    signOut.hidden = false;
+    message.textContent = 'Signed in: ' + profile.full_name + ' · Role: ' + profile.role;
+    app.hidden = false;
+    window.dispatchEvent(new Event('abla:staff-ready'));
+  }
+
+  form.addEventListener('submit', async function (event) {
+    event.preventDefault();
+    message.textContent = 'Signing in...';
+    const { data, error } = await db.auth.signInWithPassword({
+      email: email.value.trim(), password: password.value
+    });
+    if (error) { message.textContent = 'Sign-in failed: ' + error.message; return; }
+    await verifySession(data.session);
+  });
+
+  signOut.addEventListener('click', async function () {
+    message.textContent = 'Signing out...';
+    const { error } = await db.auth.signOut();
+    if (error) { message.textContent = 'Sign-out failed: ' + error.message; return; }
+    showSignedOut('You have signed out.');
+  });
+
+  db.auth.getSession().then(({ data, error }) => {
+    if (error) { showSignedOut('Could not check session: ' + error.message); return; }
+    verifySession(data.session);
+  });
+
+  db.auth.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_OUT') showSignedOut('You have signed out.');
+  });
+})();
+</script>
+<script>
+(function () {
+  const KEY = 'abla360_students_v1';
+  const BACKUP_KEY = 'abla360_local_backup_before_cloud_v1';
+  const statusBox = document.getElementById('cloudStatus');
+  const form = document.getElementById('studentForm');
+  const $ = id => document.getElementById(id);
+  const toText = value => value == null ? '' : String(value);
+  const localFields = ['admission','fullName','dob','gender','className','admissionDate','status','parentName','relationship','phone','phone2','address','interests','hobbies','talents','favourite','aspirations','learning','character','conduct','notes'];
+  let cloudReady = false;
+
+  function setStatus(message, ok) {
+    if (!statusBox) return;
+    statusBox.innerHTML = '<b>Cloud status:</b> ' + message;
+    statusBox.style.background = ok ? '#edf8f1' : '#fff8e6';
+    statusBox.style.borderColor = ok ? '#b8e0c7' : '#f0d68b';
+  }
+
+  function mapStudent(row, guardian) {
+    return {
+      id: row.id, cloudId: row.id,
+      admission: row.admission_number || '', fullName: row.full_name || '',
+      dob: row.date_of_birth || '', gender: row.gender || '', className: row.class_name || '',
+      admissionDate: row.admission_date || '', status: row.enrolment_status || 'Active',
+      parentName: guardian?.full_name || '', relationship: guardian?.relationship || '',
+      phone: guardian?.phone || '', phone2: guardian?.alternative_phone || '', address: guardian?.address || '',
+      interests: row.interests || '', hobbies: row.hobbies || '', talents: row.talents || '',
+      favourite: row.favourite_subject_activity || '', aspirations: row.aspirations || '',
+      learning: row.learning_preferences || '', character: row.positive_character_observations || '',
+      conduct: row.conduct_development_notes || '', notes: row.other_notes || ''
+    };
+  }
+
+  async function loadCloud() {
+    const db = window.ablaSupabase;
+    if (!db) return;
+    setStatus('Connecting to the ABLA 360 cloud database…', false);
+    try {
+      const [studentsRes, linksRes, guardiansRes] = await Promise.all([
+        db.from('students').select('*').order('full_name'),
+        db.from('student_guardians').select('student_id,guardian_id,is_primary'),
+        db.from('guardians').select('*')
+      ]);
+      if (studentsRes.error) throw studentsRes.error;
+      if (linksRes.error) throw linksRes.error;
+      if (guardiansRes.error) throw guardiansRes.error;
+
+      if (localStorage.getItem(BACKUP_KEY) === null) {
+        localStorage.setItem(BACKUP_KEY, localStorage.getItem(KEY) || '[]');
+      }
+      const guardianById = new Map((guardiansRes.data || []).map(g => [g.id, g]));
+      const primaryByStudent = new Map();
+      (linksRes.data || []).forEach(link => {
+        if (!primaryByStudent.has(link.student_id) || link.is_primary) primaryByStudent.set(link.student_id, link.guardian_id);
+      });
+      const records = (studentsRes.data || []).map(row => mapStudent(row, guardianById.get(primaryByStudent.get(row.id))));
+      const nextJson = JSON.stringify(records);
+      const previousJson = localStorage.getItem(KEY) || '[]';
+      if (previousJson !== nextJson) localStorage.setItem(KEY, nextJson);
+      cloudReady = true;
+      setStatus('Connected. Showing ' + records.length + ' cloud student record(s). Your previous device-only records are preserved in a separate local backup and have NOT been uploaded. Add a fictional test student first.', true);
+      if (previousJson !== nextJson) window.location.reload();
+    } catch (error) {
+      cloudReady = false;
+      setStatus('Could not load cloud records: ' + (error.message || String(error)) + '. Your device records have not been uploaded. Please report this message before entering data.', false);
+    }
+  }
+
+  async function saveCloudStudent(event) {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    if (!cloudReady) { alert('The cloud connection is not ready. Please refresh and sign in again.'); return; }
+    const db = window.ablaSupabase;
+    const record = {};
+    localFields.forEach(key => { record[key] = $(key).value.trim(); });
+    record.status = record.status || 'Active';
+    if (!record.admission || !record.fullName) { alert('Admission number and full name are required.'); return; }
+    const cloudId = form.dataset.cloudId || '';
+    const payload = {
+      admission_number: record.admission.trim(), full_name: record.fullName.trim(),
+      date_of_birth: record.dob || null, gender: record.gender || null,
+      class_name: record.className || null, admission_date: record.admissionDate || null,
+      enrolment_status: record.status, interests: record.interests || null,
+      hobbies: record.hobbies || null, talents: record.talents || null,
+      favourite_subject_activity: record.favourite || null, aspirations: record.aspirations || null,
+      learning_preferences: record.learning || null,
+      positive_character_observations: record.character || null,
+      conduct_development_notes: record.conduct || null, other_notes: record.notes || null
+    };
+    const submit = form.querySelector('button[type="submit"]');
+    submit.disabled = true; submit.textContent = 'Saving to cloud…';
+    try {
+      let studentResult;
+      if (cloudId) {
+        studentResult = await db.from('students').update(payload).eq('id', cloudId).select('id').single();
+      } else {
+        studentResult = await db.from('students').insert(payload).select('id').single();
+      }
+      if (studentResult.error) throw studentResult.error;
+      const studentId = studentResult.data.id;
+
+      if (record.parentName) {
+        let guardianQuery = db.from('guardians').select('id').eq('full_name', record.parentName).limit(1);
+        if (record.phone) guardianQuery = guardianQuery.eq('phone', record.phone);
+        const found = await guardianQuery.maybeSingle();
+        if (found.error) throw found.error;
+        let guardianId = found.data?.id;
+        const guardianPayload = {full_name:record.parentName, relationship:record.relationship || null, phone:record.phone || null, alternative_phone:record.phone2 || null, address:record.address || null};
+        if (guardianId) {
+          const updateGuardian = await db.from('guardians').update(guardianPayload).eq('id', guardianId);
+          if (updateGuardian.error) throw updateGuardian.error;
+        } else {
+          const insertGuardian = await db.from('guardians').insert(guardianPayload).select('id').single();
+          if (insertGuardian.error) throw insertGuardian.error;
+          guardianId = insertGuardian.data.id;
+        }
+        const removeLinks = await db.from('student_guardians').delete().eq('student_id', studentId);
+        if (removeLinks.error) throw removeLinks.error;
+        const linkResult = await db.from('student_guardians').insert({student_id:studentId,guardian_id:guardianId,is_primary:true});
+        if (linkResult.error) throw linkResult.error;
+      }
+      $('formModal').classList.remove('show');
+      setStatus('Student saved successfully in Supabase. Refreshing the cloud registry…', true);
+      await loadCloud();
+    } catch (error) {
+      alert('Cloud save failed: ' + (error.message || String(error)) + '\n\nNo success has been assumed. Please share this error.');
+      setStatus('Save failed: ' + (error.message || String(error)), false);
+    } finally {
+      submit.disabled = false; submit.textContent = 'Save student record';
+    }
+  }
+
+  async function deleteCloudStudent() {
+    const selectedId = document.getElementById('profileContent')?.querySelector('.eyebrow')?.textContent;
+    const current = JSON.parse(localStorage.getItem(KEY) || '[]');
+    const student = current.find(s => s.id === window.ablaSelectedStudentId) || current.find(s => s.cloudId && s.cloudId === window.ablaSelectedStudentId);
+    if (!student) { alert('Could not identify the selected cloud record.'); return; }
+    if (!confirm('Delete this cloud student record? This action cannot be undone here.')) return;
+    const db = window.ablaSupabase;
+    try {
+      const links = await db.from('student_guardians').delete().eq('student_id', student.cloudId);
+      if (links.error) throw links.error;
+      const removed = await db.from('students').delete().eq('id', student.cloudId);
+      if (removed.error) throw removed.error;
+      $('profileModal').classList.remove('show');
+      await loadCloud();
+    } catch (error) { alert('Cloud delete failed: ' + (error.message || String(error))); }
+  }
+
+  form.addEventListener('submit', saveCloudStudent, true);
+  // Until cloud deletion has been fully audited, prevent accidental local-only deletion.
+  $('deleteStudent').onclick = () => alert('Cloud deletion is temporarily disabled while the audit and recovery safeguards are completed.');
+  $('importBtn').onclick = () => alert('Backup import is temporarily disabled during the first cloud-sync test. Export remains available.');
+  window.addEventListener('abla:staff-ready', loadCloud);
+})();
+</script>
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const panel = $('financeModule');
+  if (!panel) return;
+  let feeCharges = [];
+  let payments = [];
+  let allocations = [];
+  let studentsById = new Map();
+
+  function esc(value) {
+    return String(value == null ? '' : value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function money(value) {
+    const n = Number(value || 0);
+    return 'GHS ' + n.toLocaleString('en-GH', {minimumFractionDigits:2, maximumFractionDigits:2});
+  }
+  function message(text, ok) {
+    $('financeMessage').textContent = text;
+    $('financeMessage').style.color = ok ? '#16794b' : '#8a4b08';
+  }
+  function leadershipAllowed() {
+    const p = window.ablaStaffProfile;
+    return !!(p && p.is_active === true && ['proprietor','administrator'].includes(p.role));
+  }
+  function optionHtml(value, label) {
+    return '<option value="' + esc(value) + '">' + esc(label) + '</option>';
+  }
+
+  async function loadFinance() {
+    if (!leadershipAllowed()) {
+      panel.hidden = true;
+      return;
+    }
+    panel.hidden = false;
+    const db = window.ablaSupabase;
+    if (!db) { message('The database connection is unavailable.', false); return; }
+    message('Loading school finance data…', false);
+    $('financeRefresh').disabled = true;
+    try {
+      const [summaryRes, studentRes, familyRes, chargesRes, paymentsRes, allocationsRes] = await Promise.all([
+        db.from('school_fee_financial_summary').select('*').maybeSingle(),
+        db.from('student_financial_balances').select('student_id,admission_number,full_name,class_name,total_charges,total_paid,outstanding_balance').order('full_name'),
+        db.from('family_financial_balances').select('guardian_id,guardian_name,number_of_children,children_names,family_total_charges,family_total_paid,family_outstanding_balance').order('guardian_name'),
+        db.from('fee_charges').select('id,student_id,description,amount,academic_year,term').order('created_at',{ascending:false}),
+        db.from('payments').select('id,receipt_number,payer_name,amount,received_at').order('received_at',{ascending:false}),
+        db.from('payment_allocations').select('id,payment_id,charge_id,amount')
+      ]);
+      for (const r of [summaryRes,studentRes,familyRes,chargesRes,paymentsRes,allocationsRes]) if (r.error) throw r.error;
+      const summary = summaryRes.data || {};
+      $('finCharges').textContent = money(summary.total_charges);
+      $('finReceived').textContent = money(summary.total_received);
+      $('finAllocated').textContent = money(summary.total_allocated);
+      $('finOutstanding').textContent = money(summary.total_outstanding_fees);
+
+      const studentRows = studentRes.data || [];
+      $('financeStudentCount').textContent = studentRows.length + ' students';
+      $('financeStudentRows').innerHTML = studentRows.length ? studentRows.map(s => '<tr><td><strong>'+esc(s.full_name)+'</strong></td><td>'+esc(s.admission_number)+'</td><td>'+esc(s.class_name)+'</td><td>'+money(s.total_charges)+'</td><td>'+money(s.total_paid)+'</td><td><strong>'+money(s.outstanding_balance)+'</strong></td></tr>').join('') : '<tr><td colspan="6" class="empty">No fee balances found.</td></tr>';
+      const familyRows = familyRes.data || [];
+      $('financeFamilyRows').innerHTML = familyRows.length ? familyRows.map(f => '<tr><td><strong>'+esc(f.guardian_name)+'</strong><br><small>'+esc(f.children_names)+'</small></td><td>'+esc(f.number_of_children)+'</td><td>'+money(f.family_total_charges)+'</td><td>'+money(f.family_total_paid)+'</td><td><strong>'+money(f.family_outstanding_balance)+'</strong></td><td><button type="button" class="secondary" data-family-statement="'+esc(f.guardian_id)+'">Print statement</button></td></tr>').join('') : '<tr><td colspan="6" class="empty">No family balances found.</td></tr>';
+
+      feeCharges = chargesRes.data || [];
+      payments = paymentsRes.data || [];
+      allocations = allocationsRes.data || [];
+      studentsById = new Map(studentRows.map(s => [s.student_id, s]));
+      const chargeById = new Map(feeCharges.map(c => [c.id,c]));
+      $('feeAdjustmentCharge').innerHTML = '<option value="">Select a fee charge</option>' + feeCharges.map(c => {
+        const st = studentsById.get(c.student_id);
+        const who = st ? st.full_name + ' · ' + st.admission_number : 'Student record';
+        return optionHtml(c.id, who + ' — ' + (c.description || 'Fee') + ' — ' + money(c.amount));
+      }).join('');
+      $('correctionPayment').innerHTML = '<option value="">Select an original payment</option>' + payments.map(p => optionHtml(p.id, (p.receipt_number || 'No receipt') + ' — ' + (p.payer_name || 'Unknown payer') + ' — ' + money(p.amount))).join('');
+      updateAllocationOptions();
+      message('Finance data loaded. ' + studentRows.length + ' student account(s), ' + payments.length + ' payment(s), and ' + feeCharges.length + ' fee charge(s).', true);
+    } catch (e) {
+      message('Finance data could not be loaded: ' + (e.message || String(e)), false);
+    } finally {
+      $('financeRefresh').disabled = false;
+    }
+  }
+
+  function updateAllocationOptions() {
+    const paymentId = $('correctionPayment').value;
+    const chargeById = new Map(feeCharges.map(c => [c.id,c]));
+    const matches = allocations.filter(a => a.payment_id === paymentId);
+    $('correctionAllocation').innerHTML = '<option value="">No allocation reversal</option>' + matches.map(a => {
+      const c = chargeById.get(a.charge_id);
+      const st = c ? studentsById.get(c.student_id) : null;
+      const label = (st ? st.full_name : 'Student') + ' — ' + (c?.description || 'Fee') + ' — allocated ' + money(a.amount);
+      return optionHtml(a.id,label);
+    }).join('');
+    $('allocationReversalAmount').value = '0';
+  }
+
+  $('financeRefresh').addEventListener('click', loadFinance);
+  $('correctionPayment').addEventListener('change', updateAllocationOptions);
+
+  async function printFamilyStatement(guardianId) {
+    if (!leadershipAllowed()) { message('You are not authorised to view family statements.', false); return; }
+    message('Preparing the family statement…', true);
+    try {
+      const db = window.ablaSupabase;
+      const [guardianRes, linksRes, balancesRes] = await Promise.all([
+        db.from('guardians').select('*').eq('id', guardianId).maybeSingle(),
+        db.from('student_guardians').select('student_id').eq('guardian_id', guardianId),
+        db.from('student_financial_balances').select('student_id,admission_number,full_name,class_name,total_charges,total_paid,outstanding_balance').order('full_name')
+      ]);
+      for (const r of [guardianRes, linksRes, balancesRes]) if (r.error) throw r.error;
+      const guardian = guardianRes.data || {};
+      const childIds = new Set((linksRes.data || []).map(x => x.student_id));
+      const children = (balancesRes.data || []).filter(x => childIds.has(x.student_id));
+      if (!children.length) throw new Error('No linked student accounts with fee balances were found for this guardian.');
+      const familyCharges = children.reduce((n,x)=>n+Number(x.total_charges||0),0);
+      const familyPaid = children.reduce((n,x)=>n+Number(x.total_paid||0),0);
+      const familyDue = children.reduce((n,x)=>n+Number(x.outstanding_balance||0),0);
+      const rows = children.map(x=>`<tr><td><strong>${esc(x.full_name||'Student')}</strong><br><small>${esc(x.admission_number||'')} · ${esc(x.class_name||'')}</small></td><td class="num">${money(x.total_charges)}</td><td class="num">${money(x.total_paid)}</td><td class="num due">${money(x.outstanding_balance)}</td></tr>`).join('');
+      const w = window.open('', '_blank');
+      if (!w) throw new Error('Please allow pop-ups in your browser to print the family statement.');
+      w.document.open();
+      w.document.write(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ABLA Family Statement</title><style>*{box-sizing:border-box}body{font:14px/1.5 Arial,sans-serif;color:#172433;margin:0;padding:18mm}header{background:#10243a;color:white;padding:20px;border-bottom:5px solid #d5a52b}header h1{margin:0;color:#d5a52b;font-size:25px}header p{margin:5px 0 0}h2{margin:25px 0 5px;color:#10243a}.muted,small{color:#667789}.meta{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:18px 0}.box{border:1px solid #dce4eb;border-radius:7px;padding:10px}.box b{display:block;margin-top:3px}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{padding:12px 9px;border-bottom:1px solid #dce4eb;text-align:left}th{background:#f3f6f9;color:#425466;font-size:11px;text-transform:uppercase}.num{text-align:right;white-space:nowrap}.due{font-weight:bold;color:#10243a}.totals{margin:20px 0 0 auto;max-width:380px}.totals div{display:flex;justify-content:space-between;padding:8px;border-bottom:1px solid #dce4eb}.grand{font-size:18px;font-weight:bold;background:#f8f3e5;border:1px solid #e6d39c;padding:12px!important}.foot{margin-top:35px;padding-top:14px;border-top:1px solid #dce4eb;text-align:center;color:#667789;font-size:12px}.actions{margin-top:22px;text-align:center}.actions button{background:#10243a;color:white;border:0;border-radius:7px;padding:10px 18px;font-weight:bold}@page{size:A4 portrait;margin:12mm}@media print{body{padding:0}.actions{display:none}}</style></head><body><header><h1>ABLA 360</h1><strong>AMPONTUAH BEST LINK ACADEMY</strong><p>WE INSPIRE, WE LEARN, WE LINK.</p></header><h2>OFFICIAL FAMILY FEE STATEMENT</h2><div class="muted">Consolidated account summary for all children linked to this parent / guardian.</div><div class="meta"><div class="box"><small>Parent / guardian</small><b>${esc(guardian.full_name||guardian.guardian_name||guardian.name||'Not recorded')}</b></div><div class="box"><small>Phone / contact</small><b>${esc(guardian.primary_phone||guardian.phone||guardian.phone_number||'Not recorded')}</b></div><div class="box"><small>Address / area</small><b>${esc(guardian.address||guardian.residential_address||'Not recorded')}</b></div><div class="box"><small>Statement date</small><b>${new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'long',year:'numeric'})}</b></div></div><table><thead><tr><th>Student account</th><th class="num">Total charges</th><th class="num">Net paid</th><th class="num">Outstanding</th></tr></thead><tbody>${rows}</tbody></table><div class="totals"><div><span>Family total charges</span><strong>${money(familyCharges)}</strong></div><div><span>Family net payments</span><strong>${money(familyPaid)}</strong></div><div class="grand"><span>FAMILY BALANCE DUE</span><span>${money(familyDue)}</span></div></div><div class="foot">This statement summarises recorded student account balances, including authorised fee adjustments and payment reversals. It does not create or change any payment or fee record.<br><br>Thank you for supporting Ampontuah Best Link Academy.<br><strong>We Inspire, We Learn, We Link.</strong></div><div class="actions"><button onclick="window.print()">Print / Save as PDF</button></div><script>window.onload=()=>window.print()<\/script></body></html>`);
+      w.document.close();
+      message('Family statement opened. No financial records were changed.', true);
+    } catch (e) { message('Family statement could not be prepared: ' + (e.message || String(e)), false); }
+  }
+  $('financeFamilyRows').addEventListener('click', e => {
+    const b = e.target.closest('[data-family-statement]');
+    if (b) printFamilyStatement(b.dataset.familyStatement);
+  });
+
+  $('feeAdjustmentForm').addEventListener('submit', async function (event) {
+    event.preventDefault();
+    if (!leadershipAllowed()) { message('You are not authorised to make fee adjustments.', false); return; }
+    const chargeId = $('feeAdjustmentCharge').value;
+    const enteredAmount = Number($('feeAdjustmentAmount').value);
+    const direction = $('feeAdjustmentDirection').value;
+    const amount = direction === 'reduce' ? -enteredAmount : enteredAmount;
+    const reason = $('feeAdjustmentReason').value.trim();
+    if (!chargeId || !Number.isFinite(enteredAmount) || enteredAmount <= 0 || !['increase','reduce'].includes(direction) || reason.length < 5) {
+      message('Select a charge, enter a non-zero amount and provide a reason of at least five characters.', false); return;
+    }
+    const button = this.querySelector('button[type="submit"]');
+    button.disabled = true; button.textContent = 'Recording adjustment…';
+    try {
+      const {data,error} = await window.ablaSupabase.rpc('record_fee_charge_adjustment', {
+        p_charge_id: chargeId, p_amount: amount, p_reason: reason
+      });
+      if (error) throw error;
+      this.reset();
+      message('Fee adjustment recorded successfully. Reference: ' + data, true);
+      await loadFinance();
+    } catch (e) {
+      message('Fee adjustment was not recorded: ' + (e.message || String(e)), false);
+    } finally {
+      button.disabled = false; button.textContent = 'Record fee adjustment';
+    }
+  });
+
+  $('paymentCorrectionForm').addEventListener('submit', async function (event) {
+    event.preventDefault();
+    if (!leadershipAllowed()) { message('You are not authorised to process payment corrections.', false); return; }
+    const paymentId = $('correctionPayment').value;
+    const allocationId = $('correctionAllocation').value || null;
+    const allocationAmount = Number($('allocationReversalAmount').value || 0);
+    const paymentAmount = Number($('paymentReversalAmount').value || 0);
+    const type = $('paymentReversalType').value;
+    const reason = $('paymentCorrectionReason').value.trim();
+    if (!paymentId || !Number.isFinite(allocationAmount) || !Number.isFinite(paymentAmount) || allocationAmount < 0 || paymentAmount < 0 || (allocationAmount === 0 && paymentAmount === 0) || (allocationAmount > 0 && !allocationId) || reason.length < 5) {
+      message('Choose a payment, enter a valid reversal amount and provide a reason. Select an allocation if reversing an allocated amount.', false); return;
+    }
+    const button = this.querySelector('button[type="submit"]');
+    button.disabled = true; button.textContent = 'Processing correction…';
+    try {
+      const {data,error} = await window.ablaSupabase.rpc('process_payment_correction', {
+        p_payment_id: paymentId,
+        p_allocation_id: allocationAmount > 0 ? allocationId : null,
+        p_allocation_reversal_amount: allocationAmount,
+        p_payment_reversal_amount: paymentAmount,
+        p_reversal_type: paymentAmount > 0 ? type : null,
+        p_reason: reason
+      });
+      if (error) throw error;
+      this.reset();
+      updateAllocationOptions();
+      message('Payment correction recorded successfully. ' + JSON.stringify(data), true);
+      await loadFinance();
+    } catch (e) {
+      message('Payment correction was not processed: ' + (e.message || String(e)), false);
+    } finally {
+      button.disabled = false; button.textContent = 'Process payment correction';
+    }
+  });
+
+  window.addEventListener('abla:staff-ready', loadFinance);
+  window.addEventListener('storage', () => { if (!leadershipAllowed()) panel.hidden = true; });
+  window.addEventListener('abla:staff-signed-out', () => { panel.hidden = true; });
+})();
+</script>
+<script>
+(function(){
+ const $=id=>document.getElementById(id); const panel=$('invoiceModule'); if(!panel)return;
+ if($('invoiceIssueDate')){const d=new Date();$('invoiceIssueDate').value=[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');}
+ const msg=(t,ok=false)=>{ $('invoiceMessage').textContent=t; $('invoiceMessage').style.color=ok?'#16794b':'#8a4b08'; };
+ const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const money=v=>'GHS '+Number(v||0).toLocaleString('en-GH',{minimumFractionDigits:2,maximumFractionDigits:2});
+ let students=[],charges=[],invoices=[];
+ function allowed(){const p=window.ablaStaffProfile;return !!(p&&p.is_active===true&&['proprietor','administrator','finance'].includes(p.role));}
+ async function loadStudents(){const db=window.ablaSupabase;const selected=$('invoiceStudent').value;const {data,error}=await db.from('students').select('id,full_name,admission_number,class_name').order('full_name');if(error)throw error;students=data||[];$('invoiceStudent').innerHTML='<option value="">Select a student</option>'+students.map(x=>`<option value="${esc(x.id)}">${esc(x.full_name)} · ${esc(x.admission_number||'')}</option>`).join('');if(selected&&students.some(x=>String(x.id)===String(selected)))$('invoiceStudent').value=selected;}
+ async function loadChoices(){const db=window.ablaSupabase,studentId=$('invoiceStudent').value,year=$('invoiceYear').value.trim(),term=$('invoiceTerm').value; $('invoiceChargeChoices').innerHTML='Loading fee charges…'; if(!studentId||!year||!term){$('invoiceChargeChoices').textContent='Choose a student, academic year and term to view available charges.';return;}
+ const [c,i]=await Promise.all([db.from('fee_charges').select('id,description,amount,academic_year,term').eq('student_id',studentId).eq('academic_year',year).eq('term',term).order('created_at'),db.from('invoice_items').select('fee_charge_id')]);if(c.error)throw c.error;if(i.error)throw i.error;const used=new Set((i.data||[]).map(x=>x.fee_charge_id));charges=(c.data||[]).filter(x=>!used.has(x.id));$('invoiceChargeChoices').innerHTML=charges.length?charges.map(x=>`<label style="display:flex;gap:9px;align-items:center;padding:8px 4px;border-bottom:1px solid #e5eaf0"><input type="checkbox" name="invoiceCharge" value="${esc(x.id)}" style="width:auto"> <span>${esc(x.description||'Fee')} — <strong>${money(x.amount)}</strong></span></label>`).join(''):'No uninvoiced fee charges match this student, year and term.';
+ }
+ function printInvoice(inv){const st=students.find(x=>x.id===inv.student_id);const w=window.open('','_blank');if(!w){msg('Allow pop-ups in your browser to print the invoice.');return;}w.document.write(`<!doctype html><html><head><title>${esc(inv.invoice_number)}</title><style>body{font:14px Arial;color:#172433;padding:28px;max-width:760px;margin:auto}header{background:#10243a;color:white;padding:22px;border-bottom:5px solid #d6b66f}h1{margin:0;color:#d6b66f}small{color:#607080}.total{font-size:22px;font-weight:bold;color:#10243a}.line{display:flex;justify-content:space-between;border-bottom:1px solid #ddd;padding:10px 0}.foot{margin-top:35px;border-top:1px solid #ddd;padding-top:12px;color:#607080}@media print{button{display:none}}</style></head><body><header><h1>ABLA 360</h1><div>AMPONTUAH BEST LINK ACADEMY</div><p>WE INSPIRE, WE LEARN, WE LINK.</p></header><h2>STUDENT INVOICE</h2><div class="line"><span>Invoice number</span><b>${esc(inv.invoice_number)}</b></div><div class="line"><span>Student</span><b>${esc(inv.full_name||st?.full_name||'')}</b></div><div class="line"><span>Admission number</span><b>${esc(inv.admission_number||st?.admission_number||'')}</b></div><div class="line"><span>Academic year / term</span><b>${esc(inv.academic_year)} · ${esc(inv.term)}</b></div><div class="line"><span>Issue date</span><b>${esc(inv.issue_date||'')}</b></div><div class="line"><span>Due date</span><b>${esc(inv.due_date||'Not specified')}</b></div><div class="line"><span>Invoice total</span><b>${money(inv.invoice_total)}</b></div><div class="line"><span>Amount paid</span><b>${money(inv.total_paid)}</b></div><div class="line total"><span>Outstanding</span><span>${money(inv.outstanding_balance)}</span></div><div class="foot">Please quote the invoice number when making payment. This invoice reflects recorded charges and payments at the time it is printed.</div><script>window.onload=()=>window.print()<\/script></body></html>`);w.document.close();}
+ async function loadInvoices(){const db=window.ablaSupabase;const {data,error}=await db.from('invoice_financial_details').select('*').order('issue_date',{ascending:false}).limit(100);if(error)throw error;invoices=data||[];$('invoiceRows').innerHTML=invoices.length?invoices.map((x,i)=>{const student=students.find(s=>String(s.id)===String(x.student_id));const studentName=x.full_name||x.student_name||x.name||student?.full_name||'Student name unavailable';const admission=x.admission_number||student?.admission_number||'';const paid=Number(x.total_paid||0),balance=Number(x.outstanding_balance||0);const status=x.status||x.invoice_status||x.payment_status||(balance<=0?'Paid':paid>0?'Partially Paid':(x.due_date&&x.due_date<new Date().toISOString().slice(0,10)?'Overdue':'Unpaid'));return `<tr><td><strong>${esc(x.invoice_number)}</strong></td><td>${esc(studentName)}${admission?`<br><span style="color:#667789">${esc(admission)}</span>`:''}</td><td>${esc(x.term)}</td><td>${money(x.invoice_total)}</td><td>${money(x.total_paid)}</td><td><strong>${money(x.outstanding_balance)}</strong></td><td>${esc(status)}</td><td><button type="button" class="secondary" data-print-invoice="${i}">Print</button></td></tr>`;}).join(''):'<tr><td colspan="8" class="empty">No invoices have been created yet.</td></tr>';}
+ async function refresh(){if(!allowed()){panel.hidden=true;return;}panel.hidden=false;try{msg('Loading invoice records…');await loadStudents();await loadChoices();await loadInvoices();msg('Invoice records loaded. You can create an invoice from existing fee charges.',true);}catch(e){msg('Invoice data could not be loaded: '+(e.message||String(e)));}}
+ ['invoiceStudent','invoiceYear','invoiceTerm'].forEach(id=>$(id).addEventListener('change',()=>loadChoices().catch(e=>msg(e.message))));
+ $('invoiceRefresh').addEventListener('click',refresh);
+ $('invoiceCreateForm').addEventListener('submit',async e=>{e.preventDefault();if(!allowed()){msg('Your staff role is not authorised to create invoices.');return;}const ids=[...document.querySelectorAll('input[name="invoiceCharge"]:checked')].map(x=>x.value);if(!ids.length){msg('Select at least one uninvoiced fee charge.');return;}const issue=$('invoiceIssueDate').value,due=$('invoiceDueDate').value||null;if(due&&due<issue){msg('Due date cannot be earlier than the issue date.');return;}const b=$('createInvoiceButton');b.disabled=true;b.textContent='Creating invoice…';try{const {data,error}=await window.ablaSupabase.rpc('create_abla_invoice',{p_student_id:$('invoiceStudent').value,p_academic_year:$('invoiceYear').value.trim(),p_term:$('invoiceTerm').value,p_fee_charge_ids:ids,p_issue_date:issue,p_due_date:due});if(error)throw error;msg('Invoice created: '+(data.invoice_number||data.number||'Success')+'. Refreshing records…',true);await loadChoices();await loadInvoices();}catch(err){msg('Invoice was not created: '+(err.message||String(err)));}finally{b.disabled=false;b.textContent='Create student invoice';}});
+ $('invoiceRows').addEventListener('click',e=>{const b=e.target.closest('[data-print-invoice]');if(!b)return;const inv=invoices[Number(b.dataset.printInvoice)];if(inv)printInvoice(inv);});
+ window.addEventListener('abla:staff-ready',refresh);window.addEventListener('abla:staff-signed-out',()=>{panel.hidden=true;});
+ if(window.ablaStaffProfile)refresh();
+})();
+</script>
+<script>
+(function(){
+ const $=id=>document.getElementById(id), panel=$('receiptModule'); if(!panel)return;
+ const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const money=v=>'GHS '+Number(v||0).toLocaleString('en-GH',{minimumFractionDigits:2,maximumFractionDigits:2});
+ const fmtDate=v=>{if(!v)return 'Not recorded';const d=new Date(v);return isNaN(d)?String(v):d.toLocaleString('en-GB',{dateStyle:'medium',timeStyle:'short'});};
+ let receipts=[];
+ function allowed(){const p=window.ablaStaffProfile;return !!(p&&p.is_active===true&&['proprietor','administrator','finance'].includes(p.role));}
+ function msg(t,ok=false){$('receiptMessage').textContent=t;$('receiptMessage').style.color=ok?'#16794b':'#8a4b08';}
+ async function load(){if(!allowed()){panel.hidden=true;return;}panel.hidden=false;msg('Loading existing payment records…');$('receiptRefresh').disabled=true;
+  try{
+   const db=window.ablaSupabase;
+   const [p,a,c,s,b,g]=await Promise.all([
+    db.from('payments').select('id,receipt_number,guardian_id,payer_name,payment_method,transaction_reference,amount,received_at').order('received_at',{ascending:false}).limit(100),
+    db.from('payment_allocations').select('id,payment_id,charge_id,amount'),
+    db.from('fee_charges').select('id,student_id,description,academic_year,term'),
+    db.from('students').select('id,full_name,admission_number,class_name'),
+    db.from('student_financial_balances').select('student_id,admission_number,full_name,class_name,total_charges,total_paid,outstanding_balance'),
+    db.from('guardians').select('*')
+   ]);
+   for(const r of [p,a,c,s,b,g])if(r.error)throw r.error;
+   const payments=p.data||[],allocs=a.data||[],charges=c.data||[],students=s.data||[],balances=b.data||[],guardians=g.data||[];
+   const guardianMap=new Map(guardians.map(x=>[x.id,x]));
+   const chargeMap=new Map(charges.map(x=>[x.id,x])),studentMap=new Map(students.map(x=>[x.id,x])),balanceMap=new Map(balances.map(x=>[x.student_id,x]));
+   receipts=payments.map(pay=>{
+    const rows=allocs.filter(x=>x.payment_id===pay.id).map(x=>{const ch=chargeMap.get(x.charge_id)||{},st=studentMap.get(ch.student_id)||{},bal=balanceMap.get(ch.student_id)||{};return {amount:Number(x.amount||0),description:ch.description||'Fee payment',year:ch.academic_year||'',term:ch.term||'',student:st.full_name||bal.full_name||'Student record unavailable',admission:st.admission_number||bal.admission_number||'',className:st.class_name||bal.class_name||'',studentId:ch.student_id,balance:Number(bal.outstanding_balance||0)};});
+    const guardian=guardianMap.get(pay.guardian_id)||{};return {...pay,guardianName:guardian.full_name||guardian.guardian_name||guardian.name||'',guardianPhone:guardian.primary_phone||guardian.phone||guardian.phone_number||'',guardianAddress:guardian.address||guardian.residential_address||'',allocations:rows};
+   });
+   $('receiptRows').innerHTML=receipts.length?receipts.map((x,i)=>`<tr><td><strong>${esc(x.receipt_number||'Receipt number unavailable')}</strong></td><td>${esc(x.payer_name||'Not recorded')}</td><td>${esc(fmtDate(x.received_at))}</td><td>${money(x.amount)}</td><td><button class="secondary" type="button" data-receipt-print="${i}">View / Print</button> <button class="secondary" type="button" data-receipt-share="${i}">WhatsApp</button></td></tr>`).join(''):'<tr><td colspan="5" class="empty">No recorded payments were found.</td></tr>';
+   msg('Loaded '+receipts.length+' existing payment receipt record(s). No payments were created or changed.',true);
+  }catch(e){msg('Receipts could not be loaded: '+(e.message||String(e)));}
+  finally{$('receiptRefresh').disabled=false;}
+ }
+ function receiptHtml(r){const allocationRows=r.allocations.length?r.allocations.map(a=>`<tr><td>${esc(a.student)}${a.admission?`<br><small>${esc(a.admission)} · ${esc(a.className)}</small>`:''}</td><td>${esc(a.description)}${a.year||a.term?`<br><small>${esc([a.year,a.term].filter(Boolean).join(' · '))}</small>`:''}</td><td style="text-align:right">${money(a.amount)}</td></tr>`).join(''):'<tr><td colspan="3">No fee allocation details were found for this payment.</td></tr>';
+  const outstanding=[...new Map(r.allocations.filter(a=>a.studentId).map(a=>[a.studentId,a])).values()];
+  const balances=outstanding.map(a=>`<div class="line"><span>${esc(a.student)} — remaining account balance</span><b>${money(a.balance)}</b></div>`).join('');
+  return `<!doctype html><html><head><meta charset="utf-8"><title>${esc(r.receipt_number||'ABLA Receipt')}</title><style>*{box-sizing:border-box}
+body{font:14px Arial,sans-serif;color:#172433;padding:26px;max-width:780px;margin:auto;line-height:1.4}
+header{background:#10243a;color:#fff;padding:22px;border-bottom:5px solid #d6b66f}
+h1{margin:0;color:#d6b66f;font-size:28px}
+header p{margin:9px 0 0;font-size:13px}
+.tag{color:#d6b66f;font-weight:bold;letter-spacing:2px}
+h2{margin:20px 0 12px;color:#10243a;font-size:21px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin:15px 0}
+.box{background:#f3f6f9;padding:12px 13px;border-radius:6px;min-height:17mm}
+.box small,small{color:#657789;font-size:11px}
+.box b{display:block;margin-top:6px;font-size:13px;line-height:1.4}
+table{width:100%;border-collapse:collapse;margin-top:12px;font-size:12.5px}
+th{background:#eef2f6;text-align:left}
+th,td{padding:11px 12px;border-bottom:1px solid #dce3e9}
+.line{display:flex;justify-content:space-between;gap:15px;border-bottom:1px solid #ddd;padding:12px 0}
+.total{font-size:19px;font-weight:bold;color:#10243a}
+h3{font-size:15px;margin:15px 0 8px}
+.foot{margin-top:22px;border-top:1px solid #ddd;padding-top:13px;color:#657789;font-size:11.5px;line-height:1.45}
+.actions{margin:18px 0}
+@page{size:A4 portrait;margin:12mm}
+@media print{
+ html,body{width:auto;margin:0!important;padding:0!important}
+ body{max-width:none!important;font-size:13.5px;line-height:1.4;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+ header{padding:20px 22px;border-bottom-width:5px}
+ h1{font-size:28px}
+ header p{margin:8px 0 0;font-size:12.5px}
+ .tag{margin-top:18px!important;font-size:12px}
+ h2{font-size:21px;margin:17px 0 10px}
+ .grid{gap:10px;margin:13px 0}
+ .box{padding:11px 13px;min-height:17mm}
+ .box small{font-size:11px}
+ .box b{font-size:12.5px;margin-top:5px}
+ table{margin-top:10px;font-size:12px}
+ th,td{padding:10px 11px}
+ .line{padding:11px 0;font-size:13px}
+ .total{font-size:19px}
+ h3{font-size:14.5px;margin:13px 0 7px}
+ .foot{margin-top:20px;padding-top:12px;font-size:11px;line-height:1.4}
+ .actions{display:none}
+ tr,.box,.line,.foot{break-inside:avoid;page-break-inside:avoid}
+}
+@media(max-width:520px){body{padding:12px}.grid{grid-template-columns:1fr}}</style></head><body><header><h1>ABLA 360</h1><strong>AMPONTUAH BEST LINK ACADEMY</strong><p>WE INSPIRE, WE LEARN, WE LINK.</p></header><div class="tag" style="margin-top:22px">OFFICIAL SCHOOL RECEIPT</div><h2>Payment Receipt</h2><div class="grid"><div class="box"><small>Receipt number</small><b>${esc(r.receipt_number||'Not recorded')}</b></div><div class="box"><small>Date received</small><b>${esc(fmtDate(r.received_at))}</b></div><div class="box"><small>Received from</small><b>${esc(r.payer_name||'Not recorded')}</b></div><div class="box"><small>Parent / guardian</small><b>${esc(r.guardianName||'Not recorded')}${r.guardianPhone?`<br>${esc(r.guardianPhone)}`:''}${r.guardianAddress?`<br>${esc(r.guardianAddress)}`:''}</b></div><div class="box"><small>Payment method</small><b>${esc(r.payment_method||'Not recorded')}</b></div><div class="box"><small>Transaction reference</small><b>${esc(r.transaction_reference||'Not supplied')}</b></div><div class="box"><small>Payment record</small><b>Confirmed in ABLA 360</b></div></div><h3>Fee allocation details</h3><table><thead><tr><th>Student</th><th>Fee description</th><th style="text-align:right">Allocated</th></tr></thead><tbody>${allocationRows}</tbody></table><div class="line total"><span>Amount received</span><span>${money(r.amount)}</span></div>${balances?`<h3>Current outstanding balances</h3>${balances}`:''}<div class="foot">This receipt confirms a payment already recorded in the ABLA 360 financial system. It is not a new payment instruction. Please retain this receipt for your records.<br><br>Thank you for supporting Ampontuah Best Link Academy.<br><strong>We Inspire, We Learn, We Link.</strong></div><div class="actions"><button onclick="window.print()">Print / Save as PDF</button></div></body></html>`;
+ }
+ function openReceipt(r){const w=window.open('','_blank');if(!w){msg('Please allow pop-ups to view and print the receipt.');return;}w.document.open();w.document.write(receiptHtml(r));w.document.close();}
+ function shareReceipt(r){const students=[...new Set(r.allocations.map(a=>a.student))].join(', ');const text=`ABLA 360 PAYMENT RECEIPT\nReceipt: ${r.receipt_number||'Not recorded'}\nPayer: ${r.payer_name||'Not recorded'}\nStudent(s): ${students||'See school receipt'}\nAmount received: ${money(r.amount)}\nDate: ${fmtDate(r.received_at)}\nThank you — Ampontuah Best Link Academy.`;window.open('https://wa.me/?text='+encodeURIComponent(text),'_blank','noopener');}
+ $('receiptRefresh').addEventListener('click',load);
+ $('receiptRows').addEventListener('click',e=>{const p=e.target.closest('[data-receipt-print]'),s=e.target.closest('[data-receipt-share]');if(p)openReceipt(receipts[Number(p.dataset.receiptPrint)]);if(s)shareReceipt(receipts[Number(s.dataset.receiptShare)]);});
+ window.addEventListener('abla:staff-ready',load);window.addEventListener('abla:staff-signed-out',()=>{panel.hidden=true;receipts=[];});if(window.ablaStaffProfile)load();
+})();
+</script>
+</script>
+</body></html>
